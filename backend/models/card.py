@@ -1,6 +1,6 @@
 from enums.suit import Suit
 from enums.rank import Rank
-from models.effects import Effect
+from models.effect import Effect
 
 """
 Card Model
@@ -62,12 +62,13 @@ dedicated engine classes to maintain separation of concerns.
 
 class Card:
 
-    def __init__(self, suit: Suit, rank: Rank, effects: list[Effect] | None = None, description: str | None = None):
+    def __init__(self, suit: Suit, rank: Rank, health: int =1, effects: list[Effect] | None = None, description: str | None = None):
         self.suit = suit
         self.rank = rank
         self.effects = effects if effects is not None else []
         self.description = description
         self.name = self._generate_name()
+        self.health = health #by default all cards have 1 health meaning they are destroyed after playing them, but this value can be changed via effects or passing in a higher health parameter for some cards
 
     def _generate_name(self) -> str:
         return f"{self.rank.name.title()} of {self.suit.value}"
@@ -84,6 +85,9 @@ class Card:
 
     def get_effects(self) -> list[Effect]:
         return self.effects
+
+    def get_health(self) -> int:
+        return self.health
 
 
 #some test cards
