@@ -1,11 +1,27 @@
-# Card Clash or something like that
+# CardGamePlus
 
 A full-stack collectible card game built with:
 
-- React
+- Python
 - FastAPI
 - PostgreSQL
-- SQLAlchemy
-- JWT Authentication
+- React
 
-Status: 🚧 In Development
+## Features
+
+- AI opponent
+- Custom card system
+- Player authentication
+- Deck builder
+- Persistent progression
+
+## Documentation
+
+- Architecture
+- Database Design
+- API
+- Game Rules
+
+## Tech Stack
+
+...
