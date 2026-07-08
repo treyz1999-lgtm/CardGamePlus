@@ -1,4 +1,6 @@
-
+from enums.suit import Suit
+from enums.rank import Rank
+from models.effects import Effect
 
 """
 Card Model
@@ -57,5 +59,27 @@ Game logic, combat resolution, and effect execution are handled by
 dedicated engine classes to maintain separation of concerns.
 """
 
-class Card ():
-    pass
+
+class Card:
+
+    def __init__(self, suit: Suit, rank: Rank, effects: list[Effect] | None = None, description: str | None = None):
+        self.suit = suit
+        self.rank = rank
+        self.effects = effects if effects is not None else []
+        self.description = description
+        self.name = self._generate_name()
+
+    def _generate_name(self) -> str:
+        return f"{self.rank.name.title()} of {self.suit.value}"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+#some test cards
+if __name__ == "__main__":
+    card1 = Card(Suit.HEARTS, Rank.THREE)
+    card2 = Card(Suit.SPADES, Rank.KING)
+
+    print(card1)
+    print(card2)
