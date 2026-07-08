@@ -2,6 +2,7 @@
 from enums.effect_type import EffectType
 from enums.target import Target
 from enums.trigger import Trigger
+from models.condition import Condition
 
 """
 Effect Model
@@ -58,5 +59,30 @@ An Effect is NOT responsible for:
 """
 
 class Effect:
-    def __init__(self, effect_type: EffectType, trigger: Trigger, target: Target, value: int, condition, description):
-        pass
+    def __init__(self, effect_type: EffectType, trigger: Trigger, target: Target, value, condition: Condition | None = None ):
+        self.effect_type = effect_type
+        self.trigger = trigger
+        self.target = target
+        self.value = value
+        self.condition = condition
+        self.description = self.generate_description()
+
+    def generate_action(self) -> str: #for V1 there are not many effects however in future iterations this would be better done as a map with helper functions that would know what text string to generate based on what effect type is used
+        if self.effect_type == EffectType.RANK_UP:
+            return f"Increase {self.target.value} rank by {self.value}."
+        elif self.effect_type == EffectType.HEAL:
+            return f"Heal {self.target.value} for {self.value} HP."
+        elif self.effect_type == EffectType.DRAW_CARD:
+            return f"Draw {self.value} card(s)"
+        elif self.effect_type == EffectType.SEARCH_DECK:
+            return f'Search deck for up to {self.value} card(s)'
+        elif self.effect_type == EffectType.STUN:
+            return f'Stun {self.target.value} card(s)'
+        return 'Unknown Effect'
+
+    def generate_description(self) -> str:
+        if self.condition is None:
+            return self.generate_action()
+
+        return f"{self.condition.generate_text()}, {self.generate_action()}"
+

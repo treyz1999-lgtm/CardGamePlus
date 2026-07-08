@@ -26,9 +26,9 @@ class ConditionAttribute(Enum):
     OPPONENT_HP = 'Opponent HP'
 
 class Comparison(Enum):
-    EQUAL = "Equal"
-    LESS_THAN = "Less Than"
-    GREATER_THAN = "Greater Than"
-    LESS_EQUAL = "Less Than or Equal"
-    GREATER_EQUAL = "Greater Than or Equal"
-    NOT_EQUAL = "Not Equal"
+    EQUAL = "equal"
+    LESS_THAN = "less than"
+    GREATER_THAN = "greater than"
+    LESS_EQUAL = "less than or equal"
+    GREATER_EQUAL = "greater than or equal"
+    NOT_EQUAL = "not equal"

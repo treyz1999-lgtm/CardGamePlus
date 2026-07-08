@@ -45,3 +45,10 @@ class Condition:
         self.attribute = attribute
         self.comparison = comparison
         self.value = value
+
+    def generate_text(self) -> str:
+        return (
+            f"If {self.attribute.value} "
+            f"is {self.comparison.value} "
+            f"{self.value}"
+        )
