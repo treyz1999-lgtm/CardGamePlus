@@ -1,6 +1,6 @@
+from enums.effect_duration import EffectDuration
 from models.effect import Effect
 from models.condition import Condition
-
 from enums.effect_type import EffectType
 from enums.trigger import Trigger
 from enums.target import Target
@@ -16,19 +16,21 @@ def test_effect_description():
     )
 
     effect = Effect(
-        EffectType.RANK_UP,
-        Trigger.ON_PLAY,
-        Target.SELF,
-        5,
-        condition
+        effect_type=EffectType.HEAL,
+        trigger=Trigger.ON_PLAY,
+        target=Target.SELF,
+        value=2,
+        duration=EffectDuration.IMMEDIATE
     )
 
     print(effect.generate_description())
 
     assert (
         effect.generate_description()
-        == "If Base Rank is less than 3, Increase Self rank by 5."
+        == "Heal Self for 2 HP."
     )
+
+    assert effect.duration == EffectDuration.IMMEDIATE
 
 
 test_effect_description()
