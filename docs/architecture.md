@@ -27,8 +27,7 @@ The application is divided into four primary layers:
 
 ---
 
-# Domain Models
-
+# Core Domain Models
 Core game objects:
 
 - Card
@@ -175,3 +174,164 @@ Reason:
 - Avoid duplicated data whenever possible.
 - Favor composition over large, monolithic classes.
 - Design systems so new cards and effects can be added with minimal code changes.
+
+# Gameplay Architecture
+
+## Game Zones
+
+Cards exist in one of several game zones throughout a match.
+
+Current zones:
+
+- Deck
+- Hand
+- Field (planned)
+- Graveyard (planned)
+
+Cards are **persistent objects** that move between these zones rather than being created and destroyed during gameplay.
+
+Example:
+
+```
+Deck
+   ↓
+Hand
+   ↓
+Field
+   ↓
+Graveyard
+```
+
+The Game Engine is responsible for moving cards between zones.
+
+---
+
+## Event-Driven Effects
+
+Gameplay is event-driven.
+
+When a game event occurs (playing a card, drawing, taking damage, etc.), the Game Engine notifies the `EffectEngine`.
+
+Example:
+
+```
+Card Played
+      │
+      ▼
+ Game Engine
+      │
+      ▼
+ Effect Engine
+      │
+      ▼
+ Resolve matching effects
+```
+
+The Game Engine detects events.
+
+The Effect Engine determines which effects should activate.
+
+---
+
+## Effect Registration
+
+Effects may remain registered after a card enters play depending on their duration.
+
+Immediate effects:
+
+- Resolve immediately.
+- Are discarded after execution.
+
+Persistent effects:
+
+- Remain registered while their source card is in play.
+- Continue listening for matching triggers.
+
+This allows passive behavior without requiring a separate "PassiveEffect" model.
+
+---
+
+# Object Relationships
+
+```
+Game
+│
+├── Player
+│      │
+│      ├── Deck
+│      │      │
+│      │      └── Card
+│      │              │
+│      │              └── Effect
+│      │                      │
+│      │                      └── Condition
+│      │
+│      └── Hand (list[Card])
+│
+└── EffectEngine
+```
+
+Each layer is responsible only for the objects directly beneath it.
+
+---
+
+# Search System
+
+The `Deck` supports flexible searching through the `SearchCriteria` model.
+
+Rather than exposing numerous search methods, all searches are performed using a single criteria object.
+
+Example:
+
+```python
+criteria = SearchCriteria(
+    rank=Rank.KING,
+    suit=Suit.HEARTS
+)
+
+results = deck.search(criteria)
+```
+
+Benefits:
+
+- Easily extended with new search fields.
+- Cleaner method signatures.
+- Supports combining multiple search filters.
+- Keeps search logic centralized.
+
+---
+
+# Effect Model
+
+Each `Effect` completely describes a game mechanic through data.
+
+An Effect answers four questions:
+
+| Question | Property |
+|-----------|----------|
+| What happens? | `EffectType` |
+| When does it happen? | `Trigger` |
+| Who does it affect? | `Target` |
+| How long does it remain active? | `EffectDuration` |
+
+Optional properties:
+
+- Condition
+- Value
+
+Because effects are data-driven, new cards can typically be added without modifying the engine itself.
+
+---
+
+# Collections vs Models
+
+Not every collection requires its own model.
+
+A dedicated model should exist only when it owns meaningful behavior.
+
+Examples:
+
+- `Deck` is a model because it can shuffle, search, draw, validate, and peek.
+- A player's hand is currently implemented as a `list[Card]` because it only stores cards in V1.
+
+This keeps the object model simple while allowing future refactoring if additional behavior is needed.
