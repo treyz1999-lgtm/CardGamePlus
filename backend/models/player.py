@@ -62,6 +62,7 @@ A Player is NOT responsible for:
 class Player:
 
     MAX_HEALTH = 10
+    STARTING_ACTIONS = 1
 
     @property
     def hand_size(self) -> int:
@@ -77,6 +78,7 @@ class Player:
         self.field = Field() #create a Field object - the Field is a zone that Card objects cam move to and from, naturally each Player owns a Field
         self.graveyard = Graveyard() #create a Graveyard object - the Field is a zone that Card objects cam move to and from, naturally each Player owns a Graveyard
         self.health = self.MAX_HEALTH #this might later be set to a variable that is in a config or settings file, but for V1 the player will have 10 HP
+        self.actions = self.STARTING_ACTIONS
 
     def add_to_hand(self, cards: list[Card]) -> None: #this function accepts Card(s) regardless of their origin, meaning we use this to add cards from any zone not just the deck
         self.hand.extend(cards)
@@ -86,8 +88,15 @@ class Player:
         self.add_to_hand(cards)
 
     def play_card(self, card: Card) -> None: # Move a Card from the player's hand to their Field. he GameEngine determines when a card is played; the Player performs the movement between its own zones.
+        if self.actions <= 0:
+            raise ValueError("Player has no remaining actions.")
+
+        if card not in self.hand:
+            raise ValueError("Card is not in the player's hand.")
+
         self.hand.remove(card)
         self.field.add_cards([card])
+        self.actions -= 1
 
     def take_damage(self, damage: int) -> int: #take x damage and then return new health value
         self.health -= damage
@@ -99,4 +108,7 @@ class Player:
             self.health = self.MAX_HEALTH
 
         return self.health
+
+    def reset_actions(self) -> None:
+        self.actions = self.STARTING_ACTIONS
 
