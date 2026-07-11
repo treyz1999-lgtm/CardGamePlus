@@ -89,6 +89,10 @@ class Card:
     def get_health(self) -> int:
         return self.health
 
+    def take_damage(self, damage: int) -> int: #take x damage and then return new health value
+        self.health -= damage
+        return self.health
+
 
 #some test cards
 if __name__ == "__main__":
