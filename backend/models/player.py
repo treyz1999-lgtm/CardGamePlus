@@ -112,3 +112,6 @@ class Player:
     def reset_actions(self) -> None:
         self.actions = self.STARTING_ACTIONS
 
+    def get_health(self) -> int:
+        return self.health
+

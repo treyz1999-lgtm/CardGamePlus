@@ -4,6 +4,7 @@ from enums.target import Target
 from enums.trigger import Trigger
 from models.condition import Condition
 from enums.effect_duration import EffectDuration
+from models.search_criteria import SearchCriteria
 
 """
 Effect Model
@@ -60,7 +61,7 @@ An Effect is NOT responsible for:
 """
 
 class Effect:
-    def __init__(self, effect_type: EffectType, trigger: Trigger, target: Target, value,duration: EffectDuration = EffectDuration.IMMEDIATE, condition: Condition | None = None, ):
+    def __init__(self, effect_type: EffectType, trigger: Trigger, target: Target, value,duration: EffectDuration = EffectDuration.IMMEDIATE, condition: Condition | None = None, search_criteria: SearchCriteria | None = None):
         self.effect_type = effect_type
         self.trigger = trigger
         self.target = target
@@ -68,6 +69,7 @@ class Effect:
         self.condition = condition
         self.duration = duration
         self.description = self.generate_description()
+        self.search_criteria = search_criteria
 
     def generate_action(self) -> str: #for V1 there are not many effects however in future iterations this would be better done as a map with helper functions that would know what text string to generate based on what effect type is used
         if self.effect_type == EffectType.RANK_UP:
@@ -87,4 +89,5 @@ class Effect:
             return self.generate_action()
 
         return f"{self.condition.generate_text()}, {self.generate_action()}"
+
 

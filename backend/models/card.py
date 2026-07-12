@@ -69,6 +69,7 @@ class Card:
         self.description = description
         self.name = self._generate_name()
         self.health = health #by default all cards have 1 health meaning they are destroyed after playing them, but this value can be changed via effects or passing in a higher health parameter for some cards
+        self.combat_rank = rank.value #start the numerical value for this Card's rank
 
     def _generate_name(self) -> str:
         return f"{self.rank.name.title()} of {self.suit.value}"
@@ -92,6 +93,16 @@ class Card:
     def take_damage(self, damage: int) -> int: #take x damage and then return new health value
         self.health -= damage
         return self.health
+
+    def increase_rank(self, amount: int) -> int:
+        self.combat_rank += amount
+        return self.combat_rank
+
+    def get_combat_rank(self) -> int:
+        return self.combat_rank
+
+    def reset_combat_rank(self) -> None:
+        self.combat_rank = self.rank.value
 
 
 #some test cards
