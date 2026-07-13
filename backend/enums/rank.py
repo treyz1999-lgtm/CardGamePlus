@@ -26,4 +26,4 @@ class Rank(Enum):
     JOKER = 15
 
     def __str__(self):
-        return self.value
+        return str(self.value)
