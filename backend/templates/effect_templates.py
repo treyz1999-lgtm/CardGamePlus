@@ -6,9 +6,6 @@ from enums.target import Target
 from enums.trigger import Trigger
 from enums.rank import Rank
 
-
-
-
 def _generate_search_templates() -> dict:
     templates = {}
 
