@@ -54,7 +54,11 @@ class Field:
 
     @property
     def combat_power(self) -> int:
-        return sum(card.combat_rank() for card in self.cards)
+        return sum(card.get_combat_rank() for card in self.cards)
+
+    @property
+    def defeated_cards(self) -> list[Card]:
+        return [card for card in self.cards if card.health <= 0]
 
 
     def add_cards(self, cards: list[Card]) -> None: #take a list of Card objects and add it to our Field zone
@@ -68,5 +72,4 @@ class Field:
         for card in self.cards:
             card.take_damage(damage)
 
-    def defeated_cards(self) -> list[Card]:
-        return [card for card in self.cards if card.health <= 0]
+

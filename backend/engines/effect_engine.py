@@ -10,109 +10,93 @@ from models.player import Player
 """
 Effect Engine
 
-Responsible for resolving every Effect currently active on a
-Player's Field.
+Responsible for resolving Effects supplied by the GameEngine.
 
-The EffectEngine does not determine when effects should be
-resolved. Instead, the GameEngine invokes this engine whenever
-a gameplay event occurs (such as the start of a turn, after a
-card is played, or at the end of a turn).
+Unlike the GameEngine, the EffectEngine has no knowledge of
+gameplay events or timing. It simply resolves the Effects it
+is given.
 
-The GameEngine supplies:
-
-- The Player whose Effects are being resolved.
-- That Player's opponent.
-- The Cards currently on the source Player's Field.
-
-The EffectEngine is responsible only for determining whether
-those Effects should activate and how they modify the game state.
+The GameEngine determines when Effects should activate by
+collecting every (Card, Effect) pair whose Trigger matches the
+current gameplay event and passing those pairs into this engine.
 
 Pipeline
 --------
-The EffectEngine resolves effects using the following pipeline:
 
-resolve(source_player, target_player, field.cards)
+GameEngine
     │
-    ├── Iterate through every Card on the source Player's Field.
-    │
-    ▼
-_resolve_card(source_player, target_player, card)
-    │
-    ├── Retrieve every Effect attached to the Card.
+    ├── Determine current gameplay event.
+    ├── Collect triggered (Card, Effect) pairs.
     │
     ▼
-_resolve_effect(source_player, target_player, card, effect)
+resolve(source_player, target_player, effects)
+    │
+    ├── Iterate through every (Card, Effect).
+    │
+    ▼
+_resolve_effect()
     │
     ├── Skip already resolved immediate Effects.
-    ├── Evaluate any Conditions.
-    ├── Determine the EffectDuration.
+    ├── Evaluate Conditions.
+    ├── Determine EffectDuration.
     │
     ▼
 _resolve_immediate()
         or
 _resolve_persistent()
     │
-    ├── Route the Effect to the appropriate target.
-    ├── Execute the Effect.
-    │
     ▼
 _execute_effect()
     │
-    ├── Resolve the Effect's Target.
-    ├── Execute the EffectType.
+    ├── Resolve target.
+    ├── Execute EffectType.
     │
     ▼
 Player / Card / Deck updated
 
 Responsibilities
 ----------------
+
 The EffectEngine is responsible for:
 
-- Resolving Effects attached to Cards.
-- Evaluating Effect Conditions.
+- Resolving Effects.
+- Evaluating Conditions.
 - Determining Effect Targets.
 - Tracking immediate Effects already resolved this turn.
-- Executing gameplay logic associated with each EffectType.
+- Executing gameplay logic for each EffectType.
 
 The EffectEngine is NOT responsible for:
 
-- Managing turn order.
-- Determining when effects should be checked.
-- Combat resolution.
-- Moving cards between game zones.
-- Creating Players or Cards.
+- Determining gameplay events.
+- Determining Effect Triggers.
+- Turn order.
+- Combat.
+- Moving cards between zones.
 - Database operations.
-- Authentication.
 """
 
 class EffectEngine:
-    """
-    Resolves all card effects currently active on a player's field.
-    """
 
     def __init__(self):
         self.resolved_effects: set[Effect] = set()
 
-    def resolve(self, source_player: Player, target_player: Player, cards: list[Card],) -> None:
+    def resolve(self, source_player: Player, target_player: Player, effects: list[tuple[Card, Effect]],) -> None:
         """
-        Resolve every Card currently on the source Player's field.
+        Resolve every triggered Effect supplied by the GameEngine.
         """
-        for card in cards:
-            self._resolve_card(source_player, target_player, card)
 
-    def _resolve_card(self, source_player: Player, target_player: Player, card: Card,) -> None:
-        """
-        Resolve every Effect attached to a Card.
-        """
-        for effect in card.get_effects():
-            self._resolve_effect( source_player, target_player, card, effect,)
+        if not effects:
+            return
+
+        for card, effect in effects:
+            self._resolve_effect(source_player, target_player, card, effect,)
 
     def _resolve_effect(self, source_player: Player, target_player: Player, card: Card, effect: Effect,) -> None:
 
         if effect in self.resolved_effects:
             return
 
-        if not self._check_conditions(source_player, card, effect):
+        if not self._check_conditions(source_player, card, effect,):
             return
 
         match effect.duration:
@@ -129,17 +113,18 @@ class EffectEngine:
 
         self.resolved_effects.add(effect)
 
-    def _resolve_persistent(self,source_player: Player, target_player: Player, card: Card, effect: Effect,) -> None:
+    def _resolve_persistent(self, source_player: Player, target_player: Player, card: Card, effect: Effect,) -> None:
 
         self._execute_effect(source_player, target_player, card, effect,)
 
     def _check_conditions(self, player: Player, card: Card, effect: Effect,) -> bool:
         """
-        Determine whether an Effect's conditions are satisfied.
+        Determine whether an Effect's Conditions are satisfied.
         """
-        condition = effect.condition #we need to get the Condition object from the Effect
 
-        if condition is None: # Effects without a Condition always resolve.
+        condition = effect.condition
+
+        if condition is None:
             return True
 
         match condition.attribute:
@@ -154,13 +139,13 @@ class EffectEngine:
                 current = card.get_suit()
 
             case ConditionAttribute.HAND_SIZE:
-                current = player.hand_size #this is a property of the Player class
+                current = player.hand_size
 
             case ConditionAttribute.PLAYER_HP:
                 current = player.health
 
             case ConditionAttribute.OPPONENT_HP:
-                # WIP for now -this is not in V1, but we would need to pass in both Players and then use the get_target to determine how this effect is about and have a branch for each option
+                # V2
                 return False
 
             case _:
@@ -193,7 +178,6 @@ class EffectEngine:
                     f"Unsupported comparison: {condition.comparison}"
                 )
 
-
     def _get_target_player(self, source_player: Player, target_player: Player, effect: Effect,) -> Player:
         """
         Determine which Player an Effect should target.
@@ -214,7 +198,7 @@ class EffectEngine:
 
     def _execute_effect(self, source_player: Player, target_player: Player, card: Card, effect: Effect,) -> None:
         """
-        Execute an Effect based on its EffectType.
+        Execute an Effect.
         """
 
         player = self._get_target_player(source_player, target_player, effect,)

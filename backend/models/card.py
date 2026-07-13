@@ -71,6 +71,10 @@ class Card:
         self.health = health #by default all cards have 1 health meaning they are destroyed after playing them, but this value can be changed via effects or passing in a higher health parameter for some cards
         self.combat_rank = rank.value #start the numerical value for this Card's rank
 
+    @property
+    def is_alive(self)-> bool:
+        return self.health > 0
+
     def _generate_name(self) -> str:
         return f"{self.rank.name.title()} of {self.suit.value}"
 
