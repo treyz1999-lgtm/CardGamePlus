@@ -107,14 +107,31 @@ class UserModel(Base):
     gold: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
     )
 
     wins: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
     )
 
     losses: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
     )
+
+    def __init__(
+            self,
+            username: str,
+            password_hash: str,
+            gold: int = 0,
+            wins: int = 0,
+            losses: int = 0,
+    ):
+        self.username = username
+        self.password_hash = password_hash
+        self.gold = gold
+        self.wins = wins
+        self.losses = losses

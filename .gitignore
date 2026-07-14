@@ -17,3 +17,4 @@ node_modules/
 dist/
 build/
 war_card_game.db
+.
