@@ -1,5 +1,15 @@
 from enums.rank import Rank
 
+"""
+ShopService
+
+Responsible for:
+
+Buy card
+Buy effect
+Spend gold
+"""
+
 RANK_COST = { #this dict will store the gold value for a card based on their rank - this probably shouldn't be in this file; I will move it to the shop service when its time
     Rank.JOKER: 1500,
     Rank.ACE: 1400,
