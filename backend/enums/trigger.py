@@ -11,7 +11,7 @@ errors caused by invalid trigger names.
 """
 
 class Trigger(Enum): #these might not all be used in V1
-    ON_PLAY = 'ON Play'
+    ON_PLAY = 'On Play'
     ON_DRAW = 'On Draw'
     ON_DISCARD = 'On Discard'
     ON_DEATH = 'On Death'
