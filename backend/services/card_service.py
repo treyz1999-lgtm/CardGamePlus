@@ -71,6 +71,7 @@ class CardService:
             self._create_card(
                 user_id,
                 card,
+                [],
             )
 
     def create_custom_card(
@@ -99,13 +100,9 @@ class CardService:
                 )
 
             template = self.shop_service.get_effect_template(
+                user_id,
                 effect_key,
             )
-
-            if template is None:
-                raise ValueError(
-                    f"Unknown Effect '{effect_key}'."
-                )
 
             effect_data = template["effect"]
 
@@ -124,12 +121,14 @@ class CardService:
         return self._create_card(
             user_id,
             card,
+            effect_keys,
         )
 
     def _create_card(
         self,
         user_id: int,
         card: Card,
+        effect_keys: list[str],
     ) -> CardModel:
         """
         Persist a Card and all attached Effects.
@@ -146,9 +145,13 @@ class CardService:
         self.session.commit()
         self.session.refresh(card_model)
 
-        for effect in card.get_effects():
+        for effect, effect_key in zip(
+            card.get_effects(),
+            effect_keys,
+        ):
             self.effect_service.create_effect(
                 card_model.card_id,
+                effect_key,
                 effect,
             )
 
@@ -177,26 +180,45 @@ class CardService:
 
         return self._build_card(card_model)
 
-    def get_cards(
+    def get_card_collection(
         self,
         user_id: int,
-    ) -> list[Card]:
+    ) -> list[dict]:
         """
-        Retrieve every Card owned by a User.
+        Retrieve every Card owned by a User together with
+        the information required by the collection screen.
         """
 
         card_models = (
             self.session.query(CardModel)
             .filter(
-                CardModel.user_id == user_id
+                CardModel.user_id == user_id,
             )
             .all()
         )
 
-        return [
-            self._build_card(card_model)
-            for card_model in card_models
-        ]
+        collection = []
+
+        for card_model in card_models:
+
+            effect_models = self.effect_service.get_effect_models(
+                card_model.card_id,
+            )
+
+            collection.append(
+                {
+                    "card_id": card_model.card_id,
+                    "suit": card_model.suit,
+                    "rank": card_model.rank,
+                    "health": card_model.health,
+                    "effects": [
+                        effect.effect_key
+                        for effect in effect_models
+                    ],
+                }
+            )
+
+        return collection
 
     def delete_card(
         self,
@@ -231,7 +253,7 @@ class CardService:
         """
 
         effects = self.effect_service.get_effects(
-            card_model.card_id
+            card_model.card_id,
         )
 
         return Card(

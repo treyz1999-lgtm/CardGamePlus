@@ -36,6 +36,7 @@ class EffectService:
     def create_effect(
         self,
         card_id: int,
+        effect_key: str,
         effect: Effect,
     ) -> EffectModel:
         """
@@ -44,6 +45,7 @@ class EffectService:
 
         effect_model = EffectModel(
             card_id=card_id,
+            effect_key=effect_key,
             effect_type=effect.effect_type.name,
             trigger=effect.trigger.name,
             target=effect.target.name,
@@ -103,7 +105,9 @@ class EffectService:
 
         effect_models = (
             self.session.query(EffectModel)
-            .filter(EffectModel.card_id == card_id)
+            .filter(
+                EffectModel.card_id == card_id
+            )
             .all()
         )
 
@@ -122,12 +126,16 @@ class EffectService:
 
         effect = (
             self.session.query(EffectModel)
-            .filter(EffectModel.effect_id == effect_id)
+            .filter(
+                EffectModel.effect_id == effect_id
+            )
             .first()
         )
 
         if effect is None:
-            raise ValueError("Effect not found.")
+            raise ValueError(
+                "Effect not found."
+            )
 
         self.session.delete(effect)
         self.session.commit()
@@ -169,7 +177,9 @@ class EffectService:
         if condition_model is None:
             return None
 
-        attribute = ConditionAttribute[condition_model.attribute]
+        attribute = ConditionAttribute[
+            condition_model.attribute
+        ]
 
         value = condition_model.value
 
@@ -184,7 +194,9 @@ class EffectService:
 
         return Condition(
             attribute=attribute,
-            comparison=Comparison[condition_model.comparison],
+            comparison=Comparison[
+                condition_model.comparison
+            ],
             value=value,
         )
 
@@ -223,4 +235,25 @@ class EffectService:
                 if search_model.effect_type is not None
                 else None
             ),
+        )
+
+    def get_effect_models(
+        self,
+        card_id: int,
+    ) -> list[EffectModel]:
+        """
+        Retrieve every persistent Effect attached to a Card.
+
+        This method is used by application features
+        (such as the collection screen) that need the
+        persisted Effect records rather than reconstructed
+        runtime Effect objects.
+        """
+
+        return (
+            self.session.query(EffectModel)
+            .filter(
+                EffectModel.card_id == card_id,
+            )
+            .all()
         )

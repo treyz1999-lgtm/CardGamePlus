@@ -19,8 +19,9 @@ class EffectModel(Base):
        - An optional Condition Object - will be its own table that references this table's effect_id
        -An optional SearchCriteria Object - will be its own table that references this table's effect_id
 
-       Persistent Attributes
+      Persistent Attributes
         ---------------------
+        - effect_key
         - effect_type
         - trigger
         - target
@@ -31,8 +32,9 @@ class EffectModel(Base):
         the service can reconstruct a runtime Effect object whenever
         one is requested.
 
-       Which table owns each relationship?
-       Each Effect belongs to exactly one Card, but the Condition will actually hav to be its own table that has an Effect_ID to relate each condition to its effect here on this table. Same with the SearchCriteria as well, both of these can be nullable
+        The effect_key identifies which purchasable Effect template
+        created this Effect. It is used by application features such
+        as the collection screen and deck builder.ere on this table. Same with the SearchCriteria as well, both of these can be nullable
        """
 
     __tablename__ = "effects"
@@ -75,9 +77,15 @@ class EffectModel(Base):
         default= EffectDuration.IMMEDIATE.name
     )
 
+    effect_key: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
     def __init__(
             self,
             card_id: int,
+            effect_key: str,
             effect_type: str,
             trigger: str,
             target: str,
@@ -85,6 +93,7 @@ class EffectModel(Base):
             duration: str = EffectDuration.IMMEDIATE.name,
     ):
         self.card_id = card_id
+        self.effect_key = effect_key
         self.effect_type = effect_type
         self.trigger = trigger
         self.target = target

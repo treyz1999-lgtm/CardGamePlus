@@ -26,7 +26,7 @@ router = APIRouter(
 
 
 @router.get(
-    "",
+    "/",
     response_model=ShopInventoryResponse,
 )
 def get_shop_inventory(
@@ -81,11 +81,11 @@ def purchase_effect(
         request.effect_key,
     )
 
-    user = user_service.get_by_id(
+    updated_user = user_service.get_by_id(
         current_user.user_id,
     )
 
     return PurchaseEffectResponse(
         message="Effect purchased successfully.",
-        gold=user.gold,
+        gold=updated_user.gold,
     )

@@ -11,6 +11,7 @@ from schemas.auth import (
     TokenResponse,
 )
 
+from services.user_service import UserService
 from services.auth_service import AuthService
 
 
@@ -32,7 +33,9 @@ def register(
     Register a new user account.
     """
 
-    auth_service = AuthService(session)
+    user_service = UserService(session)
+
+    auth_service = AuthService(user_service)
 
     auth_service.register(
         username=request.username,
@@ -56,7 +59,9 @@ def login(
     Authenticate a user and return a JWT.
     """
 
-    auth_service = AuthService(session)
+    user_service = UserService(session)
+
+    auth_service = AuthService(user_service)
 
     token = auth_service.login(
         username=request.username,
