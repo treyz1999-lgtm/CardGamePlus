@@ -198,8 +198,8 @@ class GameEngine:
         self.effect_engine.resolve(source_player=user, target_player=ai, effects=effects,)
 
         for card in user.field.defeated_cards:
-            moved = user.field.remove_card(card)
-            user.graveyard.add_card(moved)
+            moved = user.field.remove_card_from_deck(card)
+            user.graveyard.add_card_to_deck(moved)
 
         ai.field.damage_all_cards()
 
@@ -208,8 +208,8 @@ class GameEngine:
         self.effect_engine.resolve(source_player=ai, target_player=user, effects=effects,)
 
         for card in ai.field.defeated_cards:
-            moved = ai.field.remove_card(card)
-            ai.graveyard.add_card(moved)
+            moved = ai.field.remove_card_from_deck(card)
+            ai.graveyard.add_card_to_deck(moved)
 
         self.effect_engine.reset_turn()
 

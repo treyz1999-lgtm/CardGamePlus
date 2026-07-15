@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from database.models.deck_card_list_model import DeckCardModel
+from database.models.deck_card_model import DeckCardModel
 from database.models.deck_model import DeckModel
 
 from models.deck import Deck
@@ -107,7 +107,7 @@ class DeckService:
             for deck_model in deck_models
         ]
 
-    def add_card(
+    def add_card_to_deck(
         self,
         deck_id: int,
         card_id: int,
@@ -124,7 +124,7 @@ class DeckService:
         self.session.add(deck_card)
         self.session.commit()
 
-    def remove_card(
+    def remove_card_from_deck(
         self,
         deck_id: int,
         card_id: int,
