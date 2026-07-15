@@ -49,3 +49,15 @@ class ConditionModel(Base):
         nullable=False,
     )
 
+    def __init__(
+            self,
+            effect_id: int,
+            attribute: str,
+            comparison: str,
+            value: str,
+    ):
+        self.effect_id = effect_id
+        self.attribute = attribute
+        self.comparison = comparison
+        self.value = value
+

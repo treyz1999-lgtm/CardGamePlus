@@ -8,7 +8,7 @@ from database.models.effect_model import EffectModel
 from database.models.condition_model import ConditionModel
 from database.models.search_model import SearchCriteriaModel
 from database.models.deck_model import DeckModel
-from database.models.deck_card_list_model import DeckCardModel
+from database.models.deck_card_model import DeckCardModel
 
 
 def init_db():

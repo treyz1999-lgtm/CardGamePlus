@@ -37,3 +37,18 @@ class DeckModel(Base):
         nullable=False,
         default =  'New Deck'
     )
+
+    def __init__(
+            self,
+            user_id: int,
+            name: str = "New Deck",
+    ):
+        """
+        Initialize a Deck database record.
+
+        The database generates the deck_id automatically.
+        Cards are related through the DeckCardModel join table.
+        """
+
+        self.user_id = user_id
+        self.name = name

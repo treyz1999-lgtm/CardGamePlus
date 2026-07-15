@@ -49,3 +49,18 @@ class DeckCardModel(Base):
         ForeignKey('cards.card_id'),
         nullable=False,
     )
+
+    def __init__(
+            self,
+            deck_id: int,
+            card_id: int,
+    ):
+        """
+        Initialize a DeckCard relationship.
+
+        Each record represents one Card belonging to one Deck.
+        """
+
+        self.deck_id = deck_id
+        self.card_id = card_id
+

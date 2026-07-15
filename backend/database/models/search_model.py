@@ -36,3 +36,23 @@ class SearchCriteriaModel(Base):
         String,
         nullable=True
     )
+
+    def __init__(
+            self,
+            effect_id: int,
+            rank: int | None = None,
+            suit: str | None = None,
+            effect_type: str | None = None,
+    ):
+        """
+        Initialize a SearchCriteria database record.
+
+        All search criteria are optional. Any attribute left as
+        None is ignored when reconstructing the runtime
+        SearchCriteria object.
+        """
+
+        self.effect_id = effect_id
+        self.rank = rank
+        self.suit = suit
+        self.effect_type = effect_type

@@ -45,3 +45,23 @@ class CardModel(Base):
         default=1,
     )
 
+    def __init__(
+            self,
+            user_id: int,
+            suit: str,
+            rank: int,
+            health: int = 1,
+    ):
+        """
+        Initialize a Card database record.
+
+        The database generates the card_id automatically.
+        Effects are stored separately and reference this Card
+        through its generated card_id.
+        """
+
+        self.user_id = user_id
+        self.suit = suit
+        self.rank = rank
+        self.health = health
+

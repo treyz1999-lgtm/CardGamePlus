@@ -74,3 +74,19 @@ class EffectModel(Base):
         nullable = False,
         default= EffectDuration.IMMEDIATE.name
     )
+
+    def __init__(
+            self,
+            card_id: int,
+            effect_type: str,
+            trigger: str,
+            target: str,
+            value: int = 0,
+            duration: str = EffectDuration.IMMEDIATE.name,
+    ):
+        self.card_id = card_id
+        self.effect_type = effect_type
+        self.trigger = trigger
+        self.target = target
+        self.value = value
+        self.duration = duration
