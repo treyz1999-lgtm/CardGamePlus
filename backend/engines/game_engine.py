@@ -246,7 +246,87 @@ class GameEngine:
 
         return triggered_effects
 
-    def initialize_match(
+    def play_turn(
+            self,
+            hand_index: int,
+    ) -> None:
+        """
+        Play one complete turn.
+
+        The GameEngine coordinates every gameplay phase for
+        both Players. The frontend only specifies which Card
+        the User wishes to play.
+        """
+
+        if self.game_over:
+            raise ValueError(
+                "The game has already ended."
+            )
+
+        if hand_index < 0 or hand_index >= len(self.user.hand.cards):
+            raise ValueError(
+                "Invalid hand index."
+            )
+
+        #
+        # User turn
+        #
+
+        user_card = self.user.hand.cards[hand_index]
+
+        self.play_phase(
+            self.user,
+            self.ai,
+            user_card,
+        )
+
+        #
+        # AI turn
+        #
+
+        if self.ai.hand.cards:
+            ai_card = self.ai.hand.cards[0]
+
+            self.play_phase(
+                self.ai,
+                self.user,
+                ai_card,
+            )
+
+        #
+        # Combat
+        #
+
+        self.combat_phase(
+            self.user,
+            self.ai,
+        )
+
+        if self.game_over:
+            return
+
+        #
+        # End turn
+        #
+
+        self.end_turn(
+            self.user,
+            self.ai,
+        )
+
+        self.next_turn()
+
+        self.start_turn(
+            self.user,
+            self.ai,
+        )
+
+        self.start_turn(
+            self.ai,
+            self.user,
+        )
+
+    def initialize_game(
             self,
             user_deck,
             ai_deck,

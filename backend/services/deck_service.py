@@ -87,24 +87,28 @@ class DeckService:
         return self._build_deck(deck_model)
 
     def get_decks(
-        self,
-        user_id: int,
-    ) -> list[Deck]:
+            self,
+            user_id: int,
+    ) -> list[dict]:
         """
-        Retrieve every Deck owned by a User.
+        Retrieve every Deck owned by a User together with
+        the information required by the deck builder.
         """
 
         deck_models = (
             self.session.query(DeckModel)
             .filter(
-                DeckModel.user_id == user_id
+                DeckModel.user_id == user_id,
             )
             .all()
         )
 
         return [
-            self._build_deck(deck_model)
-            for deck_model in deck_models
+            {
+                "deck_id": deck.deck_id,
+                "name": deck.name,
+            }
+            for deck in deck_models
         ]
 
     def add_card_to_deck(
@@ -195,3 +199,52 @@ class DeckService:
             cards=cards,
             name=deck_model.name,
         )
+
+    def get_deck_details(
+            self,
+            user_id: int,
+            deck_id: int,
+    ) -> dict:
+        """
+        Retrieve a Deck together with the information
+        required by the deck builder.
+        """
+
+        deck_model = (
+            self.session.query(DeckModel)
+            .filter(
+                DeckModel.deck_id == deck_id,
+                DeckModel.user_id == user_id,
+            )
+            .first()
+        )
+
+        if deck_model is None:
+            raise ValueError(
+                "Deck not found."
+            )
+
+        deck_cards = (
+            self.session.query(DeckCardModel)
+            .filter(
+                DeckCardModel.deck_id == deck_id,
+            )
+            .all()
+        )
+
+        collection = {
+            card["card_id"]: card
+            for card in self.card_service.get_card_collection(
+                user_id,
+            )
+        }
+
+        return {
+            "deck_id": deck_model.deck_id,
+            "name": deck_model.name,
+            "cards": [
+                collection[deck_card.card_id]
+                for deck_card in deck_cards
+                if deck_card.card_id in collection
+            ],
+        }

@@ -98,14 +98,8 @@ def get_cards(
 
     return CardCollectionResponse(
         cards=[
-            CardResponse(
-                card_id=card_model.card_id,
-                suit=card.get_suit().name,
-                rank=card.get_rank().value,
-                health=card.get_health(),
-                effects=[],  # Populate from persisted EffectModel.effect_key
-            )
-            for card_model, card in collection
+            CardResponse(**card)
+            for card in collection
         ],
     )
 

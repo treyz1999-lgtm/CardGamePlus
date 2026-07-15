@@ -1,5 +1,3 @@
-import uuid
-
 from engines.game_engine import GameEngine
 
 from services.deck_service import DeckService
@@ -8,8 +6,6 @@ from services.shop_services import ShopService
 
 class GameService:
     """
-    Game Service
-
     Responsible for orchestrating runtime games.
 
     Responsibilities
@@ -17,15 +13,19 @@ class GameService:
     - Reconstruct runtime Decks.
     - Create GameEngine instances.
     - Manage active games.
-    - Process player actions.
+    - Process gameplay.
     - End games and award rewards.
 
-    The GameService coordinates the persistence services to
+    The GameService coordinates persistence services to
     reconstruct runtime objects required by the GameEngine.
 
     The GameService never directly interacts with database
     models.
     """
+
+    WIN_REWARD = 1000
+
+    _active_games: dict[int, GameEngine] = {}
 
     def __init__(
         self,
@@ -35,104 +35,96 @@ class GameService:
         self.deck_service = deck_service
         self.shop_service = shop_service
 
-        # Active runtime games.
-        self.active_games: dict[str, GameEngine] = {}
-
     def start_game(
         self,
+        user_id: int,
         user_deck_id: int,
         ai_deck_id: int,
-    ) -> str:
+    ) -> None:
         """
-        Create a new runtime game.
-
-        Returns
-        -------
-        The generated game identifier.
+        Create a new runtime game for the authenticated User.
         """
 
         user_deck = self.deck_service.get_deck(
-            user_deck_id
+            user_deck_id,
         )
 
         ai_deck = self.deck_service.get_deck(
-            ai_deck_id
+            ai_deck_id,
         )
 
         engine = GameEngine()
 
-        engine.initialize_match(
+        engine.initialize_game(
             user_deck,
             ai_deck,
         )
 
-        game_id = str(uuid.uuid4())
-
-        self.active_games[game_id] = engine
-
-        return game_id
+        self._active_games[user_id] = engine
 
     def get_game(
         self,
-        game_id: str,
+        user_id: int,
     ) -> GameEngine:
         """
-        Retrieve an active runtime game.
+        Retrieve the authenticated User's active game.
         """
 
-        engine = self.active_games.get(game_id)
+        engine = self._active_games.get(
+            user_id,
+        )
 
         if engine is None:
             raise ValueError(
-                "Game not found."
+                "No active game."
             )
 
         return engine
 
-    def process_action(
+    def play_card(
         self,
-        game_id: str,
-        action: dict,
+        user_id: int,
+        hand_index: int,
     ) -> GameEngine:
         """
-        Process a frontend action.
-
-        The router will deserialize the incoming JSON payload
-        and pass it here. This method will dispatch the action
-        to the appropriate GameEngine method.
-
-        V1 implementation is intentionally left minimal until
-        the API payloads are finalized.
+        Play a Card from the User's hand.
         """
 
-        engine = self.get_game(game_id)
+        engine = self.get_game(
+            user_id,
+        )
 
-        #
-        # Examples:
-        #
-        # engine.play_phase(...)
-        # engine.combat_phase(...)
-        # engine.end_turn(...)
-        #
+        engine.play_turn(
+            hand_index,
+        )
+
+        if engine.game_over:
+            self.end_game(
+                user_id,
+            )
 
         return engine
 
     def end_game(
         self,
-        game_id: str,
-        winner_user_id: int,
-        gold_reward: int,
+        user_id: int,
     ) -> None:
         """
-        Finish a game and award post-game rewards.
+        Finish the active game and award post-game rewards.
         """
 
-        self.shop_service.add_gold(
-            winner_user_id,
-            gold_reward,
+        engine = self.get_game(
+            user_id,
         )
 
-        self.active_games.pop(
-            game_id,
+        if engine.winner == engine.user:
+
+            self.shop_service.add_gold(
+                user_id,
+                self.WIN_REWARD,
+            )
+
+        self._active_games.pop(
+            user_id,
             None,
         )
