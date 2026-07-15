@@ -153,31 +153,31 @@ class ShopService:
             -amount,
         )
 
-        def get_effect_template(
-                self,
-                user_id: int,
-                effect_key: str,
-        ) -> dict:
-            """
-            Retrieve an owned Effect template.
+    def get_effect_template(
+            self,
+            user_id: int,
+            effect_key: str,
+    ) -> dict:
+        """
+        Retrieve an owned Effect template.
 
-            The User must already own the Effect before it can
-            be attached to a custom Card.
-            """
+        The User must already own the Effect before it can
+        be attached to a custom Card.
+        """
 
-            if not self.owns_effect(
-                    user_id,
-                    effect_key,
-            ):
-                raise ValueError(
-                    "User does not own this Effect."
-                )
+        if not self.owns_effect(
+                user_id,
+                effect_key,
+        ):
+            raise ValueError(
+                "User does not own this Effect."
+            )
 
-            template = self._inventory.get(effect_key)
+        template = self._inventory.get(effect_key)
 
-            if template is None:
-                raise ValueError(
-                    "Unknown Effect."
-                )
+        if template is None:
+            raise ValueError(
+                "Unknown Effect."
+            )
 
-            return template
+        return template

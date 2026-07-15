@@ -15,7 +15,6 @@ from templates.standard_deck import (
     STANDARD_DECK,
     create_standard_card,
 )
-from templates.effect_templates import EFFECT_TEMPLATES
 
 
 class CardService:
@@ -37,19 +36,14 @@ class CardService:
     """
 
     def __init__(
-            self,
-            session: Session,
-            effect_service: EffectService,
-            shop_service: ShopService,
+        self,
+        session: Session,
+        effect_service: EffectService,
+        shop_service: ShopService,
     ):
         self.session = session
         self.effect_service = effect_service
         self.shop_service = shop_service
-
-        self.effect_inventory = {}
-
-        for effect_group in EFFECT_TEMPLATES.values():
-            self.effect_inventory.update(effect_group)
 
     def create_starter_collection(
         self,
@@ -71,6 +65,7 @@ class CardService:
             return
 
         for card_key in STANDARD_DECK:
+
             card = create_standard_card(card_key)
 
             self._create_card(
@@ -79,10 +74,10 @@ class CardService:
             )
 
     def create_custom_card(
-            self,
-            user_id: int,
-            card_key: str,
-            effect_keys: list[str],
+        self,
+        user_id: int,
+        card_key: str,
+        effect_keys: list[str],
     ) -> CardModel:
         """
         Create and persist a custom Card.
@@ -96,24 +91,23 @@ class CardService:
         for effect_key in effect_keys:
 
             if not self.shop_service.owns_effect(
-                    user_id,
-                    effect_key,
+                user_id,
+                effect_key,
             ):
                 raise ValueError(
                     f"User does not own '{effect_key}'."
                 )
 
-            effect_data = None
+            template = self.shop_service.get_effect_template(
+                effect_key,
+            )
 
-            for effect_group in EFFECT_TEMPLATES.values():
-                if effect_key in effect_group:
-                    effect_data = effect_group[effect_key]["effect"]
-                    break
-
-            if effect_data is None:
+            if template is None:
                 raise ValueError(
                     f"Unknown Effect '{effect_key}'."
                 )
+
+            effect_data = template["effect"]
 
             effect = Effect(
                 effect_type=effect_data["effect_type"],
@@ -177,7 +171,9 @@ class CardService:
         )
 
         if card_model is None:
-            raise ValueError("Card not found.")
+            raise ValueError(
+                "Card not found."
+            )
 
         return self._build_card(card_model)
 
@@ -219,7 +215,9 @@ class CardService:
         )
 
         if card is None:
-            raise ValueError("Card not found.")
+            raise ValueError(
+                "Card not found."
+            )
 
         self.session.delete(card)
         self.session.commit()
