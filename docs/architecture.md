@@ -2,336 +2,387 @@
 
 ## Overview
 
-Card Game Plus follows a layered architecture that separates user interaction, business logic, and data persistence.
+Card Game Plus follows a layered architecture that separates user interaction, business logic, persistence, and gameplay.
+
+Each layer has a single responsibility and communicates only with the layer directly above or below it.
 
 ```
 React Frontend
         │
- REST API (HTTP)
+        ▼
+FastAPI Routers
         │
- FastAPI Backend
+        ▼
+Service Layer
         │
- ├── Game Engine
- ├── Authentication
- └── Database Layer
+        ▼
+SQLAlchemy Models
         │
- PostgreSQL
+        ▼
+SQLite / PostgreSQL
 ```
 
-The application is divided into four primary layers:
+Runtime gameplay is completely separated from persistence.
 
-- **Frontend (React)** — User interface and player interaction
-- **Backend (FastAPI)** — API endpoints, authentication, and game orchestration
-- **Database (PostgreSQL)** — Persistent storage for users, collections, and progression
-- **Game Engine (Python)** — Core game rules, effects, and battle logic
-
----
-
-# Core Domain Models
-Core game objects:
-
-- Card
-- Effect
-- EffectEngine
-- Deck
-- Player
-- Game
-- GameState
-
-Future models:
-
-- User
-- Collection
-- Match
-- Shop
-- Currency
-- Inventory
+```
+GameService
+        │
+        ▼
+DeckService
+        │
+        ▼
+CardService
+        │
+        ▼
+EffectService
+        │
+        ▼
+Runtime Objects
+        │
+        ▼
+GameEngine
+        │
+        ▼
+EffectEngine
+```
 
 ---
 
 # Layer Responsibilities
 
-## Frontend
+## Frontend (React)
 
 Responsible for:
 
 - Login / Registration
 - Deck Builder
-- Battle UI
-- Shop
 - Collection
-- Player Profile
+- Shop
+- Battle UI
+- Displaying game state
 
-The frontend should **never** contain game logic.
+The frontend never contains game rules.
+
+Its only responsibility is presenting data and sending user actions to the backend.
 
 ---
 
-## Backend
+## FastAPI Routers
 
 Responsible for:
 
+- HTTP endpoints
 - Authentication
-- API endpoints
-- User validation
-- Saving/loading games
-- Calling the Game Engine
-- Communicating with PostgreSQL
+- Request validation
+- Response serialization
 
-The backend acts as the bridge between the UI, database, and game engine.
+Routers should remain extremely thin.
+
+They receive requests, validate payloads, call the appropriate service, and return the response.
+
+---
+
+## Service Layer
+
+The service layer acts as the bridge between the database and the runtime game engine.
+
+Services have two primary responsibilities:
+
+- Persist application data.
+- Reconstruct runtime objects.
+
+Each service owns one area of the application.
+
+### AuthService
+
+Responsible for:
+
+- Registering users
+- Authenticating users
+- Password hashing
+- JWT creation
+- JWT validation
+
+---
+
+### UserService
+
+Responsible for:
+
+- User persistence
+- User retrieval
+- Updating persistent player information
+
+---
+
+### ShopService
+
+Responsible for:
+
+- Shop inventory
+- Purchasing Effect templates
+- Gold management
+- Tracking permanently unlocked Effects
+
+The ShopService never creates Cards.
+
+---
+
+### EffectService
+
+Responsible for:
+
+- Persisting Effects
+- Persisting Conditions
+- Persisting SearchCriteria
+- Reconstructing runtime Effect objects
+
+---
+
+### CardService
+
+Responsible for:
+
+- Creating starter collections
+- Creating custom Cards
+- Persisting Cards
+- Reconstructing runtime Card objects
+
+Cards are created from one immutable Card template plus zero or more unlocked Effect templates.
+
+---
+
+### DeckService
+
+Responsible for:
+
+- Persisting Decks
+- Maintaining Deck/Card relationships
+- Reconstructing runtime Deck objects
+
+---
+
+### GameService
+
+Responsible for:
+
+- Creating runtime games
+- Reconstructing runtime Decks
+- Managing active games
+- Coordinating the GameEngine
+
+The GameService orchestrates the other services but contains no gameplay rules.
+
+---
+
+## Database Layer
+
+Responsible for storing persistent application data.
+
+The database stores:
+
+- Users
+- Custom Cards
+- Effects
+- Conditions
+- SearchCriteria
+- Decks
+- Deck/Card relationships
+- Purchased Effect templates
+
+The database never stores runtime gameplay objects.
+
+---
+
+## Runtime Models
+
+Runtime models represent the objects used during gameplay.
+
+These include:
+
+- Card
+- Effect
+- Condition
+- SearchCriteria
+- Deck
+- Player
+- Field
+- Graveyard
+
+Runtime models contain game state but are never stored directly in the database.
 
 ---
 
 ## Game Engine
 
-Responsible for:
+The GameEngine is responsible for:
 
-- Turn resolution
-- Card effects
-- Damage calculation
+- Turn flow
+- Combat
 - Win conditions
-- AI decisions
-- Rule enforcement
+- Trigger detection
+- Calling the EffectEngine
 
-The Game Engine contains all gameplay logic and remains independent of the frontend.
+The GameEngine contains no database logic.
 
 ---
 
-## Database
+## Effect Engine
 
-Responsible for storing:
+The EffectEngine is responsible for:
 
-- Users
-- Password hashes
-- Card collections
-- Decks
-- Currency
-- Match history
-- Progression
-- Shop inventory
+- Resolving Effects
+- Evaluating Conditions
+- Applying gameplay actions
+- Executing Effect behavior
+
+Effects themselves are data.
+
+The EffectEngine interprets and executes them.
+
+---
+
+# Runtime Reconstruction
+
+Runtime gameplay objects are never persisted directly.
+
+Instead, services reconstruct them from database records whenever they are required.
+
+The reconstruction flow is:
+
+```
+Database
+        │
+        ▼
+Service Layer
+        │
+        ▼
+Runtime Objects
+        │
+        ▼
+GameEngine
+```
+
+For example, loading a Deck follows this process:
+
+```
+Deck
+    │
+    ▼
+DeckCard
+    │
+    ▼
+Card
+    │
+    ▼
+Effect
+    │
+    ├── Condition
+    └── SearchCriteria
+```
+
+The resulting runtime hierarchy becomes:
+
+```
+Deck
+│
+├── Card
+│     ├── Effect
+│     │      ├── Condition
+│     │      └── SearchCriteria
+│     └── Effect
+│
+├── Card
+└── ...
+```
+
+The GameEngine operates entirely on these runtime objects without any knowledge of the underlying database.
 
 ---
 
 # Design Decisions
 
-## Card Templates
+## Immutable Templates
 
-All standard cards exist as templates.
+Standard playing cards are stored as immutable templates.
 
-Players only own custom cards that reference those templates.
+Players never own template cards.
 
-Reason:
+Instead, users create persistent custom Cards by combining:
 
-- Eliminates duplicate data
-- Simplifies balance updates
-- Reduces database storage
-- Makes future card updates significantly easier
+- One standard Card template
+- Zero or more unlocked Effect templates
+
+This minimizes duplicated data while allowing unlimited customization.
 
 ---
 
-## Effect Execution
+## Data-Driven Effects
 
-Effects do **not** execute themselves.
+Effects describe gameplay entirely through data.
 
-Each Effect simply describes:
+Each Effect answers four questions:
 
-- Trigger
-- Conditions
-- Parameters
+| Question | Property |
+|-----------|----------|
+| What happens? | EffectType |
+| When does it happen? | Trigger |
+| Who does it affect? | Target |
+| How long does it remain active? | EffectDuration |
 
-The `EffectEngine` is responsible for evaluating and executing all effects.
+Optional properties include:
 
-Reason:
+- Condition
+- SearchCriteria
+- Value
 
-- Single location for game rules
-- Easier debugging
-- Easier testing
-- Supports future conditional effects
+Because Effects are data-driven, most new cards can be created without modifying the game engine.
 
 ---
 
 ## Separation of Responsibilities
 
-Domain models should primarily contain data.
+Each layer owns exactly one responsibility.
 
-Business logic belongs in specialized systems such as:
+- Routers expose the API.
+- Services manage persistence.
+- Runtime models store game state.
+- GameEngine controls gameplay.
+- EffectEngine executes Effects.
 
-- EffectEngine
-- Game
-- AI Engine
-
-Reason:
-
-- Easier maintenance
-- Better scalability
-- Cleaner object design
+This separation makes the application easier to maintain, test, and extend.
 
 ---
 
 # Guiding Principles
 
-- Keep game logic independent of the UI.
-- Keep database code independent of gameplay.
-- Avoid duplicated data whenever possible.
-- Favor composition over large, monolithic classes.
-- Design systems so new cards and effects can be added with minimal code changes.
-
-# Gameplay Architecture
-
-## Game Zones
-
-Cards exist in one of several game zones throughout a match.
-
-Current zones:
-
-- Deck
-- Hand
-- Field (planned)
-- Graveyard (planned)
-
-Cards are **persistent objects** that move between these zones rather than being created and destroyed during gameplay.
-
-Example:
-
-```
-Deck
-   ↓
-Hand
-   ↓
-Field
-   ↓
-Graveyard
-```
-
-The Game Engine is responsible for moving cards between zones.
+- Keep game logic independent of persistence.
+- Keep persistence independent of gameplay.
+- Store only persistent data.
+- Reconstruct runtime objects when needed.
+- Prefer composition over inheritance.
+- Keep services focused on a single responsibility.
+- Keep the GameEngine independent of the frontend and database.
+- Design new cards and effects to require minimal engine changes.
 
 ---
 
-## Event-Driven Effects
+# Current Status
 
-Gameplay is event-driven.
+✅ Runtime domain models complete
 
-When a game event occurs (playing a card, drawing, taking damage, etc.), the Game Engine notifies the `EffectEngine`.
+✅ GameEngine complete
 
-Example:
+✅ EffectEngine complete
 
-```
-Card Played
-      │
-      ▼
- Game Engine
-      │
-      ▼
- Effect Engine
-      │
-      ▼
- Resolve matching effects
-```
+✅ SQLAlchemy models complete
 
-The Game Engine detects events.
+✅ Service layer complete
 
-The Effect Engine determines which effects should activate.
+✅ Authentication complete
 
----
+⏳ FastAPI routers
 
-## Effect Registration
+⏳ REST API
 
-Effects may remain registered after a card enters play depending on their duration.
-
-Immediate effects:
-
-- Resolve immediately.
-- Are discarded after execution.
-
-Persistent effects:
-
-- Remain registered while their source card is in play.
-- Continue listening for matching triggers.
-
-This allows passive behavior without requiring a separate "PassiveEffect" model.
-
----
-
-# Object Relationships
-
-```
-Game
-│
-├── Player
-│      │
-│      ├── Deck
-│      │      │
-│      │      └── Card
-│      │              │
-│      │              └── Effect
-│      │                      │
-│      │                      └── Condition
-│      │
-│      └── Hand (list[Card])
-│
-└── EffectEngine
-```
-
-Each layer is responsible only for the objects directly beneath it.
-
----
-
-# Search System
-
-The `Deck` supports flexible searching through the `SearchCriteria` model.
-
-Rather than exposing numerous search methods, all searches are performed using a single criteria object.
-
-Example:
-
-```python
-criteria = SearchCriteria(
-    rank=Rank.KING,
-    suit=Suit.HEARTS
-)
-
-results = deck.search(criteria)
-```
-
-Benefits:
-
-- Easily extended with new search fields.
-- Cleaner method signatures.
-- Supports combining multiple search filters.
-- Keeps search logic centralized.
-
----
-
-# Effect Model
-
-Each `Effect` completely describes a game mechanic through data.
-
-An Effect answers four questions:
-
-| Question | Property |
-|-----------|----------|
-| What happens? | `EffectType` |
-| When does it happen? | `Trigger` |
-| Who does it affect? | `Target` |
-| How long does it remain active? | `EffectDuration` |
-
-Optional properties:
-
-- Condition
-- Value
-
-Because effects are data-driven, new cards can typically be added without modifying the engine itself.
-
----
-
-# Collections vs Models
-
-Not every collection requires its own model.
-
-A dedicated model should exist only when it owns meaningful behavior.
-
-Examples:
-
-- `Deck` is a model because it can shuffle, search, draw, validate, and peek.
-- A player's hand is currently implemented as a `list[Card]` because it only stores cards in V1.
-
-This keeps the object model simple while allowing future refactoring if additional behavior is needed.
+⏳ React frontend

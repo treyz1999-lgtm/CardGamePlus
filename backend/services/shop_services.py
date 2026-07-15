@@ -39,12 +39,29 @@ class ShopService:
         for effect_group in EFFECT_TEMPLATES.values():
             self._inventory.update(effect_group)
 
-    def get_shop_inventory(self) -> dict[str, dict]:
+    def get_shop_inventory(
+            self,
+            user_id: int,
+    ) -> list[dict]:
         """
-        Retrieve every purchasable Effect template.
+        Retrieve the complete Shop inventory for a User.
         """
 
-        return self._inventory
+        inventory = []
+
+        for effect_key, template in self._inventory.items():
+            inventory.append(
+                {
+                    "effect_key": effect_key,
+                    "cost": template["cost"],
+                    "owned": self.owns_effect(
+                        user_id,
+                        effect_key,
+                    ),
+                }
+            )
+
+        return inventory
 
     def get_owned_effects(
         self,

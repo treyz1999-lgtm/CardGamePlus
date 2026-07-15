@@ -2,11 +2,11 @@
 
 ## Overview
 
-War+ uses **SQLite** with **SQLAlchemy** to persist game data between sessions.
+Card Game Plus uses **SQLite** during development with **SQLAlchemy** as the Object Relational Mapper (ORM).
 
-The database is responsible only for storing persistent information such as users, custom cards, effects, decks, and other player-owned resources.
+The database is responsible only for storing persistent application data.
 
-Runtime gameplay objects are **not** stored directly in the database. Instead, services reconstruct runtime models from the stored data whenever they are needed.
+Runtime gameplay objects are never stored directly. Instead, the service layer reconstructs runtime objects from database records whenever they are needed.
 
 ---
 
@@ -14,13 +14,17 @@ Runtime gameplay objects are **not** stored directly in the database. Instead, s
 
 The database follows a normalized relational design.
 
-Each table stores a single type of persistent entity, while relationships between entities are represented using foreign keys.
+Each table stores a single type of persistent entity while relationships between entities are represented using foreign keys.
 
-This keeps the database easy to query, maintain, and extend.
+This keeps the schema:
+
+- Easy to query
+- Easy to maintain
+- Easy to extend
 
 The database is **not** responsible for gameplay.
 
-Instead:
+Instead, the application follows this architecture:
 
 ```
 Database
@@ -38,7 +42,7 @@ GameEngine
 EffectEngine
 ```
 
-Services reconstruct runtime objects from database records before they are passed into the game engines.
+The services reconstruct runtime objects before they are passed into the game engines.
 
 ---
 
@@ -46,29 +50,34 @@ Services reconstruct runtime objects from database records before they are passe
 
 The current database consists of the following tables.
 
+---
+
 ## User
 
 Stores player accounts and persistent player information.
 
-Attributes
+### Attributes
 
 - user_id (Primary Key)
 - username
-- password
+- password_hash
 - gold
 
-Relationships
+### Relationships
 
 - Owns many Cards
 - Owns many Decks
+- Owns many unlocked Effect templates
 
 ---
 
 ## Card
 
-Stores every custom card owned by a user.
+Stores every persistent custom Card owned by a User.
 
-Attributes
+Cards are created from immutable Card templates plus zero or more purchased Effect templates.
+
+### Attributes
 
 - card_id (Primary Key)
 - user_id (Foreign Key → User)
@@ -76,7 +85,7 @@ Attributes
 - rank
 - health
 
-Relationships
+### Relationships
 
 - Belongs to one User
 - Owns zero or more Effects
@@ -87,7 +96,7 @@ Relationships
 
 Stores every Effect attached to a Card.
 
-Attributes
+### Attributes
 
 - effect_id (Primary Key)
 - card_id (Foreign Key → Card)
@@ -97,7 +106,7 @@ Attributes
 - duration
 - value
 
-Relationships
+### Relationships
 
 - Belongs to one Card
 - May own one Condition
@@ -109,7 +118,7 @@ Relationships
 
 Stores optional activation requirements for an Effect.
 
-Attributes
+### Attributes
 
 - condition_id (Primary Key)
 - effect_id (Foreign Key → Effect)
@@ -117,7 +126,7 @@ Attributes
 - comparison
 - value
 
-Relationships
+### Relationships
 
 - Belongs to one Effect
 
@@ -127,7 +136,7 @@ Relationships
 
 Stores optional search filters used by search-related Effects.
 
-Attributes
+### Attributes
 
 - search_id (Primary Key)
 - effect_id (Foreign Key → Effect)
@@ -135,7 +144,7 @@ Attributes
 - suit
 - effect_type
 
-Relationships
+### Relationships
 
 - Belongs to one Effect
 
@@ -143,15 +152,15 @@ Relationships
 
 ## Deck
 
-Stores user-created decks.
+Stores user-created Decks.
 
-Attributes
+### Attributes
 
 - deck_id (Primary Key)
 - user_id (Foreign Key → User)
 - name
 
-Relationships
+### Relationships
 
 - Belongs to one User
 - Contains Cards through the DeckCard table
@@ -160,17 +169,39 @@ Relationships
 
 ## DeckCard
 
-Join table representing the relationship between Decks and Cards.
+Join table representing the many-to-many relationship between Decks and Cards.
 
-Attributes
+### Attributes
 
 - deck_card_id (Primary Key)
 - deck_id (Foreign Key → Deck)
 - card_id (Foreign Key → Card)
 
-Relationships
+### Relationships
 
 - Associates Cards with Decks
+
+---
+
+## UserEffect
+
+Stores permanently unlocked Effect templates purchased from the Shop.
+
+The table stores only the template key.
+
+The template definitions themselves are stored in `effect_templates.py`.
+
+### Attributes
+
+- user_effect_id (Primary Key)
+- user_id (Foreign Key → User)
+- effect_key
+
+### Relationships
+
+- Belongs to one User
+
+A user may unlock many Effect templates, but each template may only be owned once.
 
 ---
 
@@ -178,9 +209,9 @@ Relationships
 
 The database never stores runtime objects directly.
 
-Instead, services rebuild the object hierarchy when needed.
+Instead, services reconstruct the object hierarchy whenever gameplay begins.
 
-For example, loading a Deck follows the general process:
+For example, loading a Deck follows this process:
 
 ```
 Load Deck
@@ -195,13 +226,16 @@ Query Card records
 Query Effect records
     │
     ▼
-Query Condition / SearchCriteria records
+Query Condition records
+    │
+    ▼
+Query SearchCriteria records
     │
     ▼
 Construct runtime objects
 ```
 
-The final runtime hierarchy becomes:
+The resulting runtime hierarchy becomes:
 
 ```
 Deck
@@ -216,7 +250,55 @@ Deck
 └── ...
 ```
 
-This separation allows the game engines to operate entirely on runtime models without any knowledge of the underlying database.
+The GameEngine operates entirely on runtime objects and has no knowledge of the database.
+
+---
+
+# Service Responsibilities
+
+Each database table has a corresponding service responsible for persisting and reconstructing its runtime model.
+
+| Service | Primary Responsibility |
+|----------|------------------------|
+| AuthService | Authentication and JWT |
+| UserService | User persistence |
+| ShopService | Gold and unlocked Effect templates |
+| CardService | Card persistence and reconstruction |
+| EffectService | Effect persistence and reconstruction |
+| DeckService | Deck persistence and reconstruction |
+| GameService | Runtime game orchestration |
+
+This separation keeps persistence independent from gameplay.
+
+---
+
+# Design Decisions
+
+## Immutable Card Templates
+
+Standard playing cards are never stored in the database.
+
+Instead, custom Cards reference immutable templates defined in `standard_deck.py`.
+
+This eliminates duplicated card data while allowing unlimited customization.
+
+---
+
+## Immutable Effect Templates
+
+Purchasable Effects are defined once inside `effect_templates.py`.
+
+The Shop stores only the template key that identifies which templates a User has unlocked.
+
+Custom Cards may freely reuse any unlocked template without purchasing it again.
+
+---
+
+## Runtime Objects
+
+Runtime models are reconstructed by the service layer whenever a game begins.
+
+This allows the GameEngine to operate entirely on Python objects without any dependency on SQLAlchemy or the database.
 
 ---
 
@@ -228,8 +310,12 @@ This separation allows the game engines to operate entirely on runtime models wi
 
 ✅ Relational schema complete
 
-⏳ Service layer (reconstruct runtime objects)
+✅ Authentication complete
 
-⏳ Authentication
+✅ Service layer complete
 
-⏳ API routers
+⏳ FastAPI routers
+
+⏳ REST API
+
+⏳ React frontend
