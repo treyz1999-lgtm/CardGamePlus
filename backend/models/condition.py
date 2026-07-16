@@ -28,7 +28,7 @@ A Condition is responsible for:
 
 - Storing condition information.
 - Describing the requirements for an Effect.
-- Providing condition data to the ConditionEngine.
+- Providing condition data to the EffectEngine for evaluation.
 
 A Condition is NOT responsible for:
 
