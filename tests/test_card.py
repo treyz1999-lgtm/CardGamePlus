@@ -1,6 +1,6 @@
-from models.card import Card
-from enums.suit import Suit
-from enums.rank import Rank
+from models import Card
+from enums import Suit
+from enums import Rank
 
 
 def test_card_name():

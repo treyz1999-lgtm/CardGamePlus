@@ -1,5 +1,5 @@
 from models.condition import Condition
-from enums.condition import ConditionAttribute, Comparison
+from enums import ConditionAttribute, Comparison
 
 
 def test_condition_text():

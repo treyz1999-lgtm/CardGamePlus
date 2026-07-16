@@ -1,10 +1,10 @@
-from enums.effect_duration import EffectDuration
+from enums import EffectDuration
 from models.effect import Effect
 from models.condition import Condition
-from enums.effect_type import EffectType
-from enums.trigger import Trigger
-from enums.target import Target
-from enums.condition import ConditionAttribute, Comparison
+from enums import EffectType
+from enums import Trigger
+from enums import Target
+from enums import ConditionAttribute, Comparison
 
 
 def test_effect_description():

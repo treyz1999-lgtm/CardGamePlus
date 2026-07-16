@@ -1,14 +1,14 @@
-from models.card import Card
-from models.deck import Deck
+from models import Card
+from models import Deck
 from models.effect import Effect
-from models.search_criteria import SearchCriteria
+from models import SearchCriteria
 
-from enums.rank import Rank
-from enums.suit import Suit
-from enums.target import Target
-from enums.trigger import Trigger
-from enums.effect_type import EffectType
-from enums.effect_duration import EffectDuration
+from enums import Rank
+from enums import Suit
+from enums import Target
+from enums import Trigger
+from enums import EffectType
+from enums import EffectDuration
 
 
 # --------------------------------------------------

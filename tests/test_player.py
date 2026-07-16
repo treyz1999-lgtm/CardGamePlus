@@ -1,9 +1,9 @@
-from models.card import Card
-from models.graveyard import Graveyard
-from models.search_criteria import SearchCriteria
+from models import Card
+from models import Graveyard
+from models import SearchCriteria
 
-from enums.rank import Rank
-from enums.suit import Suit
+from enums import Rank
+from enums import Suit
 
 
 # --------------------------------------------------

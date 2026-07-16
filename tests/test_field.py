@@ -1,8 +1,8 @@
-from models.card import Card
-from models.field import Field
+from models import Card
+from models import Field
 
-from enums.rank import Rank
-from enums.suit import Suit
+from enums import Rank
+from enums import Suit
 
 
 # --------------------------------------------------
