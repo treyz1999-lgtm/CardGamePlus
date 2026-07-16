@@ -10,113 +10,42 @@ from models.player import Player
 """
 Game Engine
 
-Coordinates a single match between two players.
+Coordinates a single match between two Players.
 
-The GameEngine is responsible for managing the flow of a game.
-It owns both Player objects, tracks the current game state,
-determines when gameplay events occur, and delegates effect
-execution to the EffectEngine.
+The GameEngine owns both runtime Player objects and is
+responsible for executing the complete flow of a match.
 
 Unlike the EffectEngine, the GameEngine understands gameplay
-events (such as playing a card, combat, or a card dying). When
-an event occurs, it identifies every Effect whose Trigger matches
-that event and passes only those Effects to the EffectEngine.
+events (playing Cards, combat, death, turn progression, etc.).
+When an event occurs, it identifies every Effect whose Trigger
+matches that event and delegates those Effects to the
+EffectEngine for resolution.
 
-The EffectEngine is therefore responsible only for resolving
-Effects—not determining when they should activate.
+The frontend never manipulates runtime objects directly.
+Instead, it simply tells the GameEngine which Card the User
+wishes to play each turn.
 
-Initialized Attributes
-----------------------
-- user
-    The human Player.
+V1 AI
+-----
+The AI uses a fixed runtime Deck that is recreated for every
+game. The Deck is shuffled at the start of each match.
 
-- ai
-    The AI Player.
+During its turn the AI always plays the first Card currently
+in its Hand.
 
-- turn_number
-    Current turn of the match.
+Responsibilities
+----------------
+- Create Player objects.
+- Start a game.
+- Execute complete turns.
+- Coordinate gameplay phases.
+- Resolve combat.
+- Determine the winner.
+- Delegate Effect execution.
 
-- game_over
-    Indicates whether the match has ended.
-
-- winner
-    The winning Player once the game concludes.
-
-- effect_engine
-    Executes triggered Effects.
-
-Game Responsibilities
----------------------
-The GameEngine is responsible for:
-
-- Creating Player objects.
-- Starting a game.
-- Managing turn order.
-- Running each gameplay phase.
-- Coordinating movement between game zones.
-- Determining which Effects are triggered by each game event.
-- Delegating triggered Effects to the EffectEngine.
-- Resolving combat.
-- Determining the winner.
-- Ending the game.
-
-The GameEngine is NOT responsible for:
-
-- Executing Effects.
-- Evaluating Effect Conditions.
-- Determining Effect Targets.
-- Executing individual Card behavior.
-- Database operations.
-- Authentication.
-- Building decks.
-- Shop functionality.
-
-Game Flow
----------
-Each gameplay event follows the same pipeline.
-
-Gameplay Event
-    │
-    ▼
-GameEngine phase executes
-    │
-    ├── Determine which Trigger occurred.
-    ├── Collect every matching (Card, Effect) pair.
-    │
-    ▼
-EffectEngine.resolve(...)
-    │
-    ├── Evaluate Conditions.
-    ├── Resolve Duration.
-    ├── Execute Effect.
-    │
-    ▼
-Updated game state
-
-Typical Turn
-------------
-start_turn()
-
-↓
-
-play_phase()
-
-↓
-
-combat_phase()
-
-↓
-
-end_turn()
-
-↓
-
-check_winner()
-
-↓
-
-next_turn()
+The GameEngine never performs database operations.
 """
+
 
 class GameEngine:
 
@@ -133,7 +62,14 @@ class GameEngine:
 
         self.effect_engine = EffectEngine()
 
-    def start_game(self, user_deck: Deck, ai_deck: Deck,) -> None:
+    def start_game(
+        self,
+        user_deck: Deck,
+        ai_deck: Deck,
+    ) -> None:
+        """
+        Initialize a new game.
+        """
 
         self.turn_number = 1
         self.game_over = False
@@ -148,24 +84,60 @@ class GameEngine:
         self.user.draw_cards(self.STARTING_HAND_SIZE)
         self.ai.draw_cards(self.STARTING_HAND_SIZE)
 
-    def start_turn(self,source: Player, target: Player,) -> None:
+    def start_turn(
+        self,
+        source: Player,
+        target: Player,
+    ) -> None:
+        """
+        Execute the start of a Player's turn.
+        """
 
         source.reset_actions()
         source.draw_cards(1)
 
-        effects = self.get_triggered_effects(source.field.cards, Trigger.TURN_START,)
+        effects = self.get_triggered_effects(
+            source.field.cards,
+            Trigger.TURN_START,
+        )
 
-        self.effect_engine.resolve(source_player=source, target_player=target, effects=effects,)
+        self.effect_engine.resolve(
+            source_player=source,
+            target_player=target,
+            effects=effects,
+        )
 
-    def play_phase(self, source: Player, target: Player, card: Card,) -> None:
+    def play_phase(
+        self,
+        source: Player,
+        target: Player,
+        card: Card,
+    ) -> None:
+        """
+        Play a Card from the Player's Hand.
+        """
 
         source.play_card(card)
 
-        effects = self.get_triggered_effects(source.field.cards, Trigger.ON_PLAY,)
+        effects = self.get_triggered_effects(
+            source.field.cards,
+            Trigger.ON_PLAY,
+        )
 
-        self.effect_engine.resolve(source_player=source, target_player=target, effects=effects,)
+        self.effect_engine.resolve(
+            source_player=source,
+            target_player=target,
+            effects=effects,
+        )
 
-    def combat_phase(self, user: Player, ai: Player,) -> None:
+    def combat_phase(
+        self,
+        user: Player,
+        ai: Player,
+    ) -> None:
+        """
+        Resolve combat between both Players.
+        """
 
         user_power = user.field.combat_power
         ai_power = ai.field.combat_power
@@ -181,21 +153,49 @@ class GameEngine:
         if self.game_over:
             return
 
-        user_effects = self.get_triggered_effects(user.field.cards, Trigger.ON_DAMAGE,)
+        user_effects = self.get_triggered_effects(
+            user.field.cards,
+            Trigger.ON_DAMAGE,
+        )
 
-        ai_effects = self.get_triggered_effects(ai.field.cards, Trigger.ON_DAMAGE,)
+        ai_effects = self.get_triggered_effects(
+            ai.field.cards,
+            Trigger.ON_DAMAGE,
+        )
 
-        self.effect_engine.resolve(source_player=user, target_player=ai, effects=user_effects,)
+        self.effect_engine.resolve(
+            source_player=user,
+            target_player=ai,
+            effects=user_effects,
+        )
 
-        self.effect_engine.resolve(source_player=ai, target_player=user, effects=ai_effects,)
+        self.effect_engine.resolve(
+            source_player=ai,
+            target_player=user,
+            effects=ai_effects,
+        )
 
-    def end_turn(self, user: Player, ai: Player,) -> None:
+    def end_turn(
+        self,
+        user: Player,
+        ai: Player,
+    ) -> None:
+        """
+        Resolve end-of-turn gameplay.
+        """
 
         user.field.damage_all_cards()
 
-        effects = self.get_triggered_effects(user.field.defeated_cards, Trigger.ON_DEATH,)
+        effects = self.get_triggered_effects(
+            user.field.defeated_cards,
+            Trigger.ON_DEATH,
+        )
 
-        self.effect_engine.resolve(source_player=user, target_player=ai, effects=effects,)
+        self.effect_engine.resolve(
+            source_player=user,
+            target_player=ai,
+            effects=effects,
+        )
 
         for card in user.field.defeated_cards:
             moved = user.field.remove_card_from_deck(card)
@@ -203,9 +203,16 @@ class GameEngine:
 
         ai.field.damage_all_cards()
 
-        effects = self.get_triggered_effects(ai.field.defeated_cards, Trigger.ON_DEATH,)
+        effects = self.get_triggered_effects(
+            ai.field.defeated_cards,
+            Trigger.ON_DEATH,
+        )
 
-        self.effect_engine.resolve(source_player=ai, target_player=user, effects=effects,)
+        self.effect_engine.resolve(
+            source_player=ai,
+            target_player=user,
+            effects=effects,
+        )
 
         for card in ai.field.defeated_cards:
             moved = ai.field.remove_card_from_deck(card)
@@ -213,7 +220,12 @@ class GameEngine:
 
         self.effect_engine.reset_turn()
 
-    def check_winner(self) -> Player | None:
+    def check_winner(
+        self,
+    ) -> Player | None:
+        """
+        Determine whether either Player has won.
+        """
 
         if not self.user.is_alive:
             self.winner = self.ai
@@ -225,12 +237,21 @@ class GameEngine:
 
         return self.winner
 
-    def next_turn(self) -> None:
+    def next_turn(
+        self,
+    ) -> None:
+        """
+        Advance to the next turn.
+        """
 
         if not self.game_over:
             self.turn_number += 1
 
-    def get_triggered_effects(self, cards: list[Card], trigger: Trigger,) -> list[tuple[Card, Effect]]:
+    def get_triggered_effects(
+        self,
+        cards: list[Card],
+        trigger: Trigger,
+    ) -> list[tuple[Card, Effect]]:
         """
         Return every (Card, Effect) pair matching the given Trigger.
         """
@@ -242,20 +263,25 @@ class GameEngine:
             for effect in card.get_effects():
 
                 if effect.trigger == trigger:
-                    triggered_effects.append((card, effect))
+                    triggered_effects.append(
+                        (
+                            card,
+                            effect,
+                        )
+                    )
 
         return triggered_effects
 
     def play_turn(
-            self,
-            hand_index: int,
+        self,
+        hand_index: int,
     ) -> None:
         """
-        Play one complete turn.
+        Execute one complete turn.
 
-        The GameEngine coordinates every gameplay phase for
-        both Players. The frontend only specifies which Card
-        the User wishes to play.
+        The frontend specifies which Card the User wishes to
+        play. The GameEngine executes every remaining gameplay
+        phase, including the AI turn.
         """
 
         if self.game_over:
@@ -281,10 +307,14 @@ class GameEngine:
         )
 
         #
-        # AI turn
+        # V1 AI
+        #
+        # The AI always plays the first Card
+        # currently in its Hand.
         #
 
         if self.ai.hand.cards:
+
             ai_card = self.ai.hand.cards[0]
 
             self.play_phase(
@@ -306,7 +336,7 @@ class GameEngine:
             return
 
         #
-        # End turn
+        # End Turn
         #
 
         self.end_turn(
@@ -327,9 +357,20 @@ class GameEngine:
         )
 
     def initialize_game(
-            self,
+        self,
+        user_deck: Deck,
+        ai_deck: Deck,
+    ) -> None:
+        """
+        Initialize a new match and execute the opening turn.
+        """
+
+        self.start_game(
             user_deck,
             ai_deck,
-    ):
-        self.start_game(user_deck, ai_deck)
-        self.start_turn(self.user, self.ai)
+        )
+
+        self.start_turn(
+            self.user,
+            self.ai,
+        )

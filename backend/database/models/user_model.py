@@ -39,7 +39,7 @@ Initialized Columns
 
 - gold
     The User's current gold balance used to purchase
-    cards and effects.
+    Effect templates from the Shop.
 
 - wins
     Total number of matches won.

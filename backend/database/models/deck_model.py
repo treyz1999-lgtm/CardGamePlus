@@ -32,7 +32,7 @@ class DeckModel(Base):
         nullable= False,
     )
 
-    name: Mapped[str] = mapped_column( #they can give it a name but if they don't it will just use its ID
+    name: Mapped[str] = mapped_column( # Defaults to "New Deck" if no name is provided.
         String,
         nullable=False,
         default =  'New Deck'

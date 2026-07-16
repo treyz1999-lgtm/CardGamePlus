@@ -57,6 +57,10 @@ A Player is NOT responsible for:
 - Enforcing game rules.
 - Storing user account information.
 - Saving or loading data from a database.
+
+For V1 the Hand is represented as a list of Cards.
+A dedicated Hand model may be introduced if additional
+hand-specific behavior is required.
 """
 
 class Player:

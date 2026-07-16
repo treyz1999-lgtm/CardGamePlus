@@ -39,10 +39,6 @@ Optional Attributes
     Optional requirement that must be satisfied before
     the effect can activate.
 
-- description
-    Human-readable text describing the effect.
-    Used for UI and debugging.
-
     Effect Responsibilities
 -----------------------
 An Effect is responsible for:

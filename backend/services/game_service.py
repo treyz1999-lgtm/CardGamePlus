@@ -3,6 +3,8 @@ from engines.game_engine import GameEngine
 from services.deck_service import DeckService
 from services.shop_services import ShopService
 
+from templates.ai_deck import create_ai_deck
+
 
 class GameService:
     """
@@ -10,11 +12,12 @@ class GameService:
 
     Responsibilities
     ----------------
-    - Reconstruct runtime Decks.
+    - Reconstruct the User's runtime Deck.
+    - Construct the default runtime AI Deck.
     - Create GameEngine instances.
     - Manage active games.
     - Process gameplay.
-    - End games and award rewards.
+    - Award post-game rewards.
 
     The GameService coordinates persistence services to
     reconstruct runtime objects required by the GameEngine.
@@ -39,19 +42,19 @@ class GameService:
         self,
         user_id: int,
         user_deck_id: int,
-        ai_deck_id: int,
     ) -> None:
         """
         Create a new runtime game for the authenticated User.
+
+        The User's Deck is reconstructed from the database while
+        the AI always receives the default runtime Deck.
         """
 
         user_deck = self.deck_service.get_deck(
             user_deck_id,
         )
 
-        ai_deck = self.deck_service.get_deck(
-            ai_deck_id,
-        )
+        ai_deck = create_ai_deck()
 
         engine = GameEngine()
 
@@ -88,6 +91,9 @@ class GameService:
     ) -> GameEngine:
         """
         Play a Card from the User's hand.
+
+        The GameEngine executes the remainder of the turn,
+        including the AI's move.
         """
 
         engine = self.get_game(

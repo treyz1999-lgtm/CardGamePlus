@@ -11,8 +11,6 @@ Every card should always contain the following information:
 
 Required Attributes
 -------------------
-- template_id
-    Unique identifier linking this card to a base card template.
 
 - suit
     The card's suit (Hearts, Diamonds, Clubs, Spades, Joker).

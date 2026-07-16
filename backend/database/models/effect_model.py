@@ -33,8 +33,7 @@ class EffectModel(Base):
         one is requested.
 
         The effect_key identifies which purchasable Effect template
-        created this Effect. It is used by application features such
-        as the collection screen and deck builder.ere on this table. Same with the SearchCriteria as well, both of these can be nullable
+        created this Effect.
        """
 
     __tablename__ = "effects"

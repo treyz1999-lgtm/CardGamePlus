@@ -1,6 +1,5 @@
 from models.card import Card
 import random
-from collections import deque
 from models.search_criteria import SearchCriteria
 
 """

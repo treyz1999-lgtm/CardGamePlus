@@ -15,8 +15,7 @@ construct a Card object.
 
 These templates should NEVER be modified directly.
 
-When a player creates a card, the CardFactory (or equivalent
-service) should retrieve the desired template, construct a new
+When a player creates a card, the CardService should retrieve the desired template, construct a new
 Card object from the stored values, attach any purchased effects,
 and return that new Card.
 
@@ -98,11 +97,11 @@ STANDARD_DECK = {
     "KS": {"rank": Rank.KING,  "suit": Suit.SPADES},
 }
 
-def create_standard_card(card_id: str) -> Card:
+def create_standard_card(card_key: str) -> Card:
     """
     Create a new Card from one of the standard deck templates.
     """
-    template = STANDARD_DECK[card_id]
+    template = STANDARD_DECK[card_key]
 
     return Card(
         suit=template["suit"],

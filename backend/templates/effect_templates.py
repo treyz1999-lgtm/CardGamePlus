@@ -8,7 +8,15 @@ from enums.rank import Rank
 
 def _generate_search_templates() -> dict:
     templates = {}
+    """
+    # Generates every supported SearchCriteria template.
+    # These templates are reused by searchable Effects
+    # instead of constructing SearchCriteria manually.
+    Not every Effect template is used in V1.
 
+    Additional templates are included so the game
+    can expand without changing the template format.
+    """
     # Rank only
     for rank in Rank:
         templates[rank.name.lower()] = (
@@ -37,7 +45,7 @@ def _generate_search_templates() -> dict:
     return templates
 
 
-SEARCH_CRITERIA_TEMPLATES = _generate_search_templates() #this will make all possible permutations of search by rank and or suit
+SEARCH_CRITERIA_TEMPLATES = _generate_search_templates()
 
 
 EFFECT_TEMPLATES = {
