@@ -10,7 +10,7 @@ Players build unique decks by combining standard playing cards with permanently 
 
 **Application**
 
-> https://YOUR-LIVE-LINK-HERE
+>https://card-game-plus.vercel.app/login
 
 ### Demo Account
 
