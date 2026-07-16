@@ -148,7 +148,7 @@ class EffectService:
         Reconstruct a runtime Effect object.
         """
 
-        return Effect(
+        effect = Effect(
             effect_type=EffectType[effect_model.effect_type],
             trigger=Trigger[effect_model.trigger],
             target=Target[effect_model.target],
@@ -158,6 +158,9 @@ class EffectService:
             search_criteria=self._build_search_criteria(effect_model),
         )
 
+        effect.effect_key = effect_model.effect_key
+
+        return effect
     def _build_condition(
         self,
         effect_model: EffectModel,

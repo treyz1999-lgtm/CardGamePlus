@@ -20,6 +20,7 @@ Card creation is delegated to the CardService.
 from sqlalchemy.orm import Session
 
 from database.models.Owned_Effect_Model import OwnedEffectModel
+from models.effect import Effect
 from services.user_service import UserService
 from templates.effect_templates import EFFECT_TEMPLATES
 
@@ -53,6 +54,12 @@ class ShopService:
             inventory.append(
                 {
                     "effect_key": effect_key,
+                    "name": self._build_effect_name(
+                        effect_key,
+                    ),
+                    "description": self._build_effect_description(
+                        template,
+                    ),
                     "cost": template["cost"],
                     "owned": self.owns_effect(
                         user_id,
@@ -62,6 +69,34 @@ class ShopService:
             )
 
         return inventory
+
+    def _build_effect_name(
+        self,
+        effect_key: str,
+    ) -> str:
+        return " ".join(
+            part.capitalize()
+            for part in effect_key.split("_")
+            if part
+        )
+
+    def _build_effect_description(
+        self,
+        template: dict,
+    ) -> str:
+        effect_data = template["effect"]
+
+        effect = Effect(
+            effect_type=effect_data["effect_type"],
+            trigger=effect_data["trigger"],
+            target=effect_data["target"],
+            value=effect_data["value"],
+            duration=effect_data["duration"],
+            condition=effect_data["condition"],
+            search_criteria=effect_data["search_criteria"],
+        )
+
+        return effect.description
 
     def get_owned_effects(
         self,

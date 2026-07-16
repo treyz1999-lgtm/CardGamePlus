@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from database.models.deck_card_model import DeckCardModel
 from database.models.deck_model import DeckModel
+from database.models.card_model import CardModel
 
 from models.deck import Deck
 
@@ -113,12 +114,30 @@ class DeckService:
 
     def add_card_to_deck(
         self,
+        user_id: int,
         deck_id: int,
         card_id: int,
     ) -> None:
         """
         Add a Card to a Deck.
         """
+
+        self._get_user_deck(
+            user_id,
+            deck_id,
+        )
+
+        card = (
+            self.session.query(CardModel)
+            .filter(
+                CardModel.card_id == card_id,
+                CardModel.user_id == user_id,
+            )
+            .first()
+        )
+
+        if card is None:
+            raise ValueError("Card not found.")
 
         deck_card = DeckCardModel(
             deck_id=deck_id,
@@ -130,12 +149,18 @@ class DeckService:
 
     def remove_card_from_deck(
         self,
+        user_id: int,
         deck_id: int,
         card_id: int,
     ) -> None:
         """
         Remove a Card from a Deck.
         """
+
+        self._get_user_deck(
+            user_id,
+            deck_id,
+        )
 
         deck_card = (
             self.session.query(DeckCardModel)
@@ -154,18 +179,16 @@ class DeckService:
 
     def delete_deck(
         self,
+        user_id: int,
         deck_id: int,
     ) -> None:
         """
         Delete a Deck.
         """
 
-        deck = (
-            self.session.query(DeckModel)
-            .filter(
-                DeckModel.deck_id == deck_id
-            )
-            .first()
+        deck = self._get_user_deck(
+            user_id,
+            deck_id,
         )
 
         if deck is None:
@@ -197,8 +220,26 @@ class DeckService:
 
         return Deck(
             cards=cards,
-            name=deck_model.name,
         )
+
+    def _get_user_deck(
+        self,
+        user_id: int,
+        deck_id: int,
+    ) -> DeckModel:
+        deck = (
+            self.session.query(DeckModel)
+            .filter(
+                DeckModel.deck_id == deck_id,
+                DeckModel.user_id == user_id,
+            )
+            .first()
+        )
+
+        if deck is None:
+            raise ValueError("Deck not found.")
+
+        return deck
 
     def get_deck_details(
             self,

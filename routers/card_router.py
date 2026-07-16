@@ -13,6 +13,8 @@ from schemas.card import (
     CreateCardResponse,
     CardResponse,
     CardCollectionResponse,
+    CardTemplateResponse,
+    CardTemplateCollectionResponse,
     DeleteCardResponse,
 )
 
@@ -100,6 +102,30 @@ def get_cards(
         cards=[
             CardResponse(**card)
             for card in collection
+        ],
+    )
+
+
+@router.get(
+    "/templates",
+    response_model=CardTemplateCollectionResponse,
+)
+def get_card_templates(
+    current_user: UserModel = Depends(get_current_user),
+    session: Session = Depends(get_db),
+) -> CardTemplateCollectionResponse:
+    """
+    Retrieve available standard Card templates.
+    """
+
+    card_service = get_card_service(session)
+
+    templates = card_service.get_card_templates()
+
+    return CardTemplateCollectionResponse(
+        templates=[
+            CardTemplateResponse(**template)
+            for template in templates
         ],
     )
 

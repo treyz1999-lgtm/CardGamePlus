@@ -84,6 +84,46 @@ class CardCollectionResponse(BaseModel):
     )
 
 
+class CardTemplateResponse(BaseModel):
+    """
+    Immutable standard Card template displayed when creating a Card.
+    """
+
+    card_key: str = Field(
+        min_length=2,
+        max_length=2,
+        description="Standard Card template identifier.",
+        examples=["KH"],
+    )
+
+    suit: str = Field(
+        description="Card suit.",
+        examples=["HEARTS"],
+    )
+
+    rank: int = Field(
+        ge=2,
+        le=14,
+        description="Card rank (2-14 where 11 = Jack, 12 = Queen, 13 = King, and 14 = Ace).",
+        examples=[13],
+    )
+
+    display_name: str = Field(
+        description="User-facing standard Card name.",
+        examples=["King of Hearts"],
+    )
+
+
+class CardTemplateCollectionResponse(BaseModel):
+    """
+    Available immutable standard Card templates.
+    """
+
+    templates: list[CardTemplateResponse] = Field(
+        description="Every standard Card template available for custom Card creation.",
+    )
+
+
 class DeleteCardResponse(BaseModel):
     """
     Response returned after deleting a Card.

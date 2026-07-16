@@ -5,13 +5,13 @@ import { Panel } from '../components/Panel';
 import { PlayingCard } from '../components/PlayingCard';
 import * as cardService from '../services/cardService';
 import * as shopService from '../services/shopService';
-import type { Card, ShopItem } from '../types/api';
+import type { Card, CardTemplate, ShopItem } from '../types/api';
 import { getErrorMessage } from '../utils/errors';
-import { humanizeKey } from '../utils/cards';
 
 export function CollectionPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [cardKey, setCardKey] = useState('');
   const [selectedEffects, setSelectedEffects] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +19,7 @@ export function CollectionPage() {
   const [error, setError] = useState<string | null>(null);
 
   const ownedEffects = useMemo(
-    () => shopItems.filter((item) => item.owned).map((item) => item.effect_key),
+    () => shopItems.filter((item) => item.owned),
     [shopItems],
   );
 
@@ -28,12 +28,15 @@ export function CollectionPage() {
     setError(null);
 
     try {
-      const [cardData, inventory] = await Promise.all([
+      const [cardData, inventory, templates] = await Promise.all([
         cardService.getCards(),
         shopService.getShopInventory(),
+        cardService.getCardTemplates(),
       ]);
       setCards(cardData);
       setShopItems(inventory);
+      setCardTemplates(templates);
+      setCardKey((current) => current || templates[0]?.card_key || '');
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {
@@ -82,28 +85,32 @@ export function CollectionPage() {
         {error ? <ErrorMessage label={error} /> : null}
         <div className="form-row">
           <label>
-            <span>Card Key</span>
-            <input
+            <span>Standard Card</span>
+            <select
               value={cardKey}
-              maxLength={2}
-              placeholder="KH"
               onChange={(event) => setCardKey(event.target.value)}
-            />
+            >
+              {cardTemplates.map((template) => (
+                <option value={template.card_key} key={template.card_key}>
+                  {template.display_name}
+                </option>
+              ))}
+            </select>
           </label>
-          <Button disabled={isSaving || cardKey.trim().length !== 2} onClick={handleCreateCard}>
+          <Button disabled={isSaving || !cardKey} onClick={handleCreateCard}>
             {isSaving ? 'Creating...' : 'Create Card'}
           </Button>
         </div>
         <div className="effect-picker">
           {ownedEffects.length > 0 ? (
-            ownedEffects.map((effectKey) => (
-              <label className="check-pill" key={effectKey}>
+            ownedEffects.map((effect) => (
+              <label className="check-pill" key={effect.effect_key}>
                 <input
                   type="checkbox"
-                  checked={selectedEffects.includes(effectKey)}
-                  onChange={() => toggleEffect(effectKey)}
+                  checked={selectedEffects.includes(effect.effect_key)}
+                  onChange={() => toggleEffect(effect.effect_key)}
                 />
-                <span>{humanizeKey(effectKey)}</span>
+                <span>{effect.name}</span>
               </label>
             ))
           ) : (

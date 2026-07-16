@@ -2,19 +2,15 @@
 
 The V1 frontend uses only the existing FastAPI REST routes and does not add or assume new endpoints.
 
-## Backend gaps found during integration
+## Backend integration status
 
-1. `routers/game_router.py` calls `GameService.get_game_state(...)`, but `services/game_service.py` does not currently define that method.
-   - Minimal backend change: add `GameService.get_game_state(user_id)` that serializes the active `GameEngine` into the existing `schemas.game.GameStateResponse` shape.
+Resolved during integration:
 
-2. `GET /shop/` returns `effect_key`, `cost`, and `owned`, but the V1 screen requirement asks for effect name and description.
-   - Minimal backend change: include display metadata such as `name` and `description` in `ShopInventoryItem`.
+- `GameService.get_game_state(user_id)` now serializes active runtime games into the existing `schemas.game.GameStateResponse` shape.
+- Completed matches now preserve the final serialized game state long enough for `/game/play` to return Victory or Defeat before the completed state is cleared.
+- Runtime Deck and Card reconstruction now match the existing runtime model constructors and response schemas.
+- Deck mutation router/service signatures now match.
+- `GET /shop/` now includes backend-derived Effect display `name` and `description` fields while preserving `effect_key`, `cost`, and `owned`.
+- `GET /cards/templates` now exposes immutable standard Card templates for the Collection card-creation picker.
 
-3. Card creation requires a `card_key`, but there is no endpoint that exposes valid standard card templates.
-   - Minimal backend change: add a read-only endpoint that returns standard card template keys and display metadata from `templates/standard_deck.py`.
-
-Until those are available, the frontend:
-
-- Calls `/game/state` and `/game/play` as designed, but depends on the missing backend serializer.
-- Displays humanized effect keys as names and notes that descriptions are unavailable.
-- Lets the user enter a two-character `card_key` instead of presenting a backend-populated template picker.
+There are no known frontend API gaps remaining for the V1 screens.

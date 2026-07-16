@@ -1,6 +1,7 @@
 import { apiClient } from './apiClient';
 import type {
   CardCollectionResponse,
+  CardTemplateCollectionResponse,
   CreateCardRequest,
   CreateCardResponse,
   MessageResponse,
@@ -9,6 +10,11 @@ import type {
 export async function getCards() {
   const response = await apiClient.get<CardCollectionResponse>('/cards/');
   return response.data.cards;
+}
+
+export async function getCardTemplates() {
+  const response = await apiClient.get<CardTemplateCollectionResponse>('/cards/templates');
+  return response.data.templates;
 }
 
 export async function createCard(request: CreateCardRequest) {

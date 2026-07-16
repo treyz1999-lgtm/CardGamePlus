@@ -60,7 +60,8 @@ dedicated engine classes to maintain separation of concerns.
 
 class Card:
 
-    def __init__(self, suit: Suit, rank: Rank, health: int =1, effects: list[Effect] | None = None, description: str | None = None):
+    def __init__(self, suit: Suit, rank: Rank, health: int =1, effects: list[Effect] | None = None, description: str | None = None, card_id: int | None = None):
+        self.card_id = card_id
         self.suit = suit
         self.rank = rank
         self.effects = effects if effects is not None else []
@@ -88,6 +89,9 @@ class Card:
 
     def get_effects(self) -> list[Effect]:
         return self.effects
+
+    def add_effect(self, effect: Effect) -> None:
+        self.effects.append(effect)
 
     def get_health(self) -> int:
         return self.health

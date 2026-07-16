@@ -137,7 +137,7 @@ class CardService:
         card_model = CardModel(
             user_id=user_id,
             suit=card.get_suit().name,
-            rank=card.get_rank().value,
+            rank=card.get_rank(),
             health=card.get_health(),
         )
 
@@ -220,6 +220,26 @@ class CardService:
 
         return collection
 
+    def get_card_templates(
+        self,
+    ) -> list[dict]:
+        """
+        Retrieve immutable standard Card templates for Card creation.
+        """
+
+        return [
+            {
+                "card_key": card_key,
+                "suit": template["suit"].name,
+                "rank": template["rank"].value,
+                "display_name": (
+                    f"{template['rank'].name.title()} "
+                    f"of {template['suit'].value}"
+                ),
+            }
+            for card_key, template in STANDARD_DECK.items()
+        ]
+
     def delete_card(
         self,
         card_id: int,
@@ -261,4 +281,5 @@ class CardService:
             rank=Rank(card_model.rank),
             health=card_model.health,
             effects=effects,
+            card_id=card_model.card_id,
         )

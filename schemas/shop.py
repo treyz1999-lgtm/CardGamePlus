@@ -12,6 +12,16 @@ class ShopInventoryItem(BaseModel):
         examples=["heal_1"],
     )
 
+    name: str = Field(
+        description="User-facing Effect name.",
+        examples=["Heal 1"],
+    )
+
+    description: str = Field(
+        description="User-facing description of the Effect behavior.",
+        examples=["Heal Self for 1 HP."],
+    )
+
     cost: int = Field(
         ge=0,
         description="Gold required to purchase the Effect.",

@@ -44,6 +44,17 @@ export interface CreateCardResponse extends MessageResponse {
   card_id: number;
 }
 
+export interface CardTemplate {
+  card_key: string;
+  suit: string;
+  rank: number;
+  display_name: string;
+}
+
+export interface CardTemplateCollectionResponse {
+  templates: CardTemplate[];
+}
+
 export interface Deck {
   deck_id: number;
   name: string;
@@ -72,6 +83,8 @@ export interface AddCardRequest {
 
 export interface ShopItem {
   effect_key: string;
+  name: string;
+  description: string;
   cost: number;
   owned: boolean;
 }

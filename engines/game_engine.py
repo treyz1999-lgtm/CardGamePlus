@@ -198,8 +198,8 @@ class GameEngine:
         )
 
         for card in user.field.defeated_cards:
-            moved = user.field.remove_card_from_deck(card)
-            user.graveyard.add_card_to_deck(moved)
+            moved = user.field.remove_card(card)
+            user.graveyard.add_cards([moved])
 
         ai.field.damage_all_cards()
 
@@ -215,8 +215,8 @@ class GameEngine:
         )
 
         for card in ai.field.defeated_cards:
-            moved = ai.field.remove_card_from_deck(card)
-            ai.graveyard.add_card_to_deck(moved)
+            moved = ai.field.remove_card(card)
+            ai.graveyard.add_cards([moved])
 
         self.effect_engine.reset_turn()
 
@@ -289,7 +289,7 @@ class GameEngine:
                 "The game has already ended."
             )
 
-        if hand_index < 0 or hand_index >= len(self.user.hand.cards):
+        if hand_index < 0 or hand_index >= len(self.user.hand):
             raise ValueError(
                 "Invalid hand index."
             )
@@ -298,7 +298,7 @@ class GameEngine:
         # User turn
         #
 
-        user_card = self.user.hand.cards[hand_index]
+        user_card = self.user.hand[hand_index]
 
         self.play_phase(
             self.user,
@@ -313,9 +313,9 @@ class GameEngine:
         # currently in its Hand.
         #
 
-        if self.ai.hand.cards:
+        if self.ai.hand:
 
-            ai_card = self.ai.hand.cards[0]
+            ai_card = self.ai.hand[0]
 
             self.play_phase(
                 self.ai,

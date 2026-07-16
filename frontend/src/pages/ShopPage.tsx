@@ -5,7 +5,6 @@ import { EmptyState, ErrorMessage, LoadingState } from '../components/States';
 import { useAuth } from '../contexts/AuthContext';
 import * as shopService from '../services/shopService';
 import type { ShopItem } from '../types/api';
-import { humanizeKey } from '../utils/cards';
 import { getErrorMessage } from '../utils/errors';
 
 export function ShopPage() {
@@ -54,8 +53,8 @@ export function ShopPage() {
           {inventory.map((item) => (
             <article className="shop-item" key={item.effect_key}>
               <div>
-                <h3>{humanizeKey(item.effect_key)}</h3>
-                <p className="muted">Description unavailable from current API.</p>
+                <h3>{item.name}</h3>
+                <p className="muted">{item.description}</p>
               </div>
               <div className="shop-item-footer">
                 <strong>{item.cost} gold</strong>
