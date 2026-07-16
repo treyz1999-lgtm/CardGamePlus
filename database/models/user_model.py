@@ -106,7 +106,7 @@ class UserModel(Base):
 
     gold: Mapped[int] = mapped_column(
         Integer,
-        default=0,
+        default=1000,
         nullable=False,
     )
 
@@ -126,7 +126,7 @@ class UserModel(Base):
             self,
             username: str,
             password_hash: str,
-            gold: int = 0,
+            gold: int = 1000,
             wins: int = 0,
             losses: int = 0,
     ):

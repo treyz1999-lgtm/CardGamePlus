@@ -27,7 +27,7 @@ class UserService:
         """
            Create and persist a new user.
            """
-        user = UserModel( username=username,password_hash = hashed_password, gold = 0,) #create SQL Alchemy Object
+        user = UserModel( username=username,password_hash = hashed_password, gold = 1000,) #create SQL Alchemy Object
 
         self.session.add(user)
         self.session.commit()

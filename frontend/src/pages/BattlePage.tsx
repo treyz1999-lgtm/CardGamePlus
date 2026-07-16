@@ -4,6 +4,7 @@ import { CardBack } from '../components/CardBack';
 import { Panel } from '../components/Panel';
 import { PlayingCard } from '../components/PlayingCard';
 import { EmptyState, ErrorMessage } from '../components/States';
+import { useAuth } from '../contexts/AuthContext';
 import * as deckService from '../services/deckService';
 import * as gameService from '../services/gameService';
 import type { Card, Deck, GameState } from '../types/api';
@@ -32,6 +33,7 @@ export function BattlePage() {
   const [selectedHandIndex, setSelectedHandIndex] = useState<number | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { refreshUser } = useAuth();
 
   const loadDecks = useCallback(async () => {
     try {
@@ -81,8 +83,13 @@ export function BattlePage() {
     setError(null);
 
     try {
-      setGameState(await gameService.playCard({ hand_index: selectedHandIndex }));
+      const nextGameState = await gameService.playCard({ hand_index: selectedHandIndex });
+      setGameState(nextGameState);
       setSelectedHandIndex(null);
+
+      if (nextGameState.game_over && nextGameState.winner === 'USER') {
+        await refreshUser();
+      }
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     }
