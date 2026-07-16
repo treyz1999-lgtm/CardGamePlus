@@ -39,26 +39,26 @@ class PlayCardRequest(BaseModel):
     )
 
 
-class PlayerStateResponse(BaseModel):
+class UserStateResponse(BaseModel):
     """
-    Runtime state of a Player.
+    Runtime state of the authenticated User.
     """
 
     hp: int = Field(
         ge=0,
-        description="Current Player health.",
+        description="Current User health.",
         examples=[20],
     )
 
     deck_size: int = Field(
         ge=0,
-        description="Number of Cards remaining in the Deck.",
+        description="Number of Cards remaining in the User's Deck.",
         examples=[17],
     )
 
     hand: list[CardResponse] = Field(
         default_factory=list,
-        description="Cards currently in the Player's hand.",
+        description="Cards currently in the User's hand.",
     )
 
     field: list[CardResponse] = Field(
@@ -68,7 +68,44 @@ class PlayerStateResponse(BaseModel):
 
     graveyard: list[CardResponse] = Field(
         default_factory=list,
-        description="Cards currently in the graveyard.",
+        description="Cards currently in the User's graveyard.",
+    )
+
+
+class AIStateResponse(BaseModel):
+    """
+    Runtime state of the AI opponent.
+
+    The contents of the AI's hand remain hidden from the User.
+    Only the number of Cards in the AI's hand is exposed.
+    """
+
+    hp: int = Field(
+        ge=0,
+        description="Current AI health.",
+        examples=[20],
+    )
+
+    deck_size: int = Field(
+        ge=0,
+        description="Number of Cards remaining in the AI Deck.",
+        examples=[17],
+    )
+
+    hand_size: int = Field(
+        ge=0,
+        description="Number of Cards currently in the AI's hand.",
+        examples=[4],
+    )
+
+    field: list[CardResponse] = Field(
+        default_factory=list,
+        description="Cards currently on the battlefield.",
+    )
+
+    graveyard: list[CardResponse] = Field(
+        default_factory=list,
+        description="Cards currently in the AI's graveyard.",
     )
 
 
@@ -88,9 +125,15 @@ class GameStateResponse(BaseModel):
         examples=[False],
     )
 
-    user: PlayerStateResponse
+    winner: str | None = Field(
+        default=None,
+        description="Winner of the game once it has concluded.",
+        examples=["USER"],
+    )
 
-    ai: PlayerStateResponse
+    user: UserStateResponse
+
+    ai: AIStateResponse
 
 
 class EndGameResponse(BaseModel):

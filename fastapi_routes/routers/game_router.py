@@ -72,7 +72,10 @@ def start_game(
     session: Session = Depends(get_db),
 ) -> StartGameResponse:
     """
-    Start a new game.
+    Start a new game using the selected Deck.
+
+    The authenticated User's Deck is reconstructed from the
+    database while the AI receives the default runtime Deck.
     """
 
     game_service = get_game_service(session)
@@ -81,12 +84,9 @@ def start_game(
     # V1:
     # AI always uses Deck 1.
     #
-    ai_deck_id = 1
-
     game_service.start_game(
         current_user.user_id,
         request.deck_id,
-        ai_deck_id,
     )
 
     return StartGameResponse(

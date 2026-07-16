@@ -9,10 +9,12 @@ from database.models.condition_model import ConditionModel
 from database.models.search_model import SearchCriteriaModel
 from database.models.deck_model import DeckModel
 from database.models.deck_card_model import DeckCardModel
+from database.models.Owned_Effect_Model import OwnedEffectModel
 
 
 def init_db():
 
+    print(Base.metadata.tables.keys())
     Base.metadata.create_all(bind=engine)
 
 
