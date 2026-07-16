@@ -24,7 +24,7 @@ The demo account includes:
 - Playable deck
 - Unlocked Effects
 - Gold for testing the Shop
-
+- I am using vercel and render free tier so if you get a network error message then you likely should just try again in like 30 seconds or so
 ---
 
 # Screenshots
