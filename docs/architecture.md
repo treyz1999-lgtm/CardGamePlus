@@ -1,6 +1,6 @@
 # Architecture
 
-## Overview
+# Overview
 
 Card Game Plus follows a layered architecture that separates user interaction, business logic, persistence, and gameplay.
 
@@ -15,35 +15,45 @@ FastAPI Routers
         ▼
 Service Layer
         │
-        ▼
-SQLAlchemy Models
-        │
-        ▼
-SQLite / PostgreSQL
+        ├──────────────┐
+        ▼              ▼
+Database         Runtime Objects
+(SQLAlchemy)           │
+        │              ▼
+        └──────► GameEngine
+                       │
+                       ▼
+                 EffectEngine
 ```
 
-Runtime gameplay is completely separated from persistence.
+Persistence and gameplay are intentionally independent.
+
+Services bridge the gap between persistent database records and the runtime objects required by the game engine.
+
+---
+
+# Project Structure
 
 ```
-GameService
-        │
-        ▼
-DeckService
-        │
-        ▼
-CardService
-        │
-        ▼
-EffectService
-        │
-        ▼
-Runtime Objects
-        │
-        ▼
-GameEngine
-        │
-        ▼
-EffectEngine
+CardGamePlus/
+│
+├── assets/
+├── database/
+├── dependencies/
+├── docs/
+├── engines/
+├── enums/
+├── frontend/
+├── models/
+├── routers/
+├── schemas/
+├── services/
+├── templates/
+├── tests/
+│
+├── config.py
+├── main.py
+└── README.md
 ```
 
 ---
@@ -61,9 +71,9 @@ Responsible for:
 - Battle UI
 - Displaying game state
 
-The frontend never contains game rules.
+The frontend never contains gameplay rules.
 
-Its only responsibility is presenting data and sending user actions to the backend.
+Its responsibility is presenting data and sending player actions to the backend.
 
 ---
 
@@ -76,29 +86,31 @@ Responsible for:
 - Request validation
 - Response serialization
 
-Routers should remain extremely thin.
+Routers remain intentionally thin.
 
-They receive requests, validate payloads, call the appropriate service, and return the response.
+They validate requests, call the appropriate service, and return serialized responses.
 
 ---
 
 ## Service Layer
 
-The service layer acts as the bridge between the database and the runtime game engine.
+The Service Layer bridges persistence and runtime gameplay.
 
 Services have two primary responsibilities:
 
 - Persist application data.
 - Reconstruct runtime objects.
 
-Each service owns one area of the application.
+Each service owns one portion of the application.
+
+---
 
 ### AuthService
 
 Responsible for:
 
-- Registering users
-- Authenticating users
+- Registering Users
+- Authenticating Users
 - Password hashing
 - JWT creation
 - JWT validation
@@ -111,7 +123,7 @@ Responsible for:
 
 - User persistence
 - User retrieval
-- Updating persistent player information
+- Updating persistent User information
 
 ---
 
@@ -148,7 +160,10 @@ Responsible for:
 - Persisting Cards
 - Reconstructing runtime Card objects
 
-Cards are created from one immutable Card template plus zero or more unlocked Effect templates.
+Cards are created from:
+
+- One immutable Card template
+- Zero or more unlocked Effect templates
 
 ---
 
@@ -167,11 +182,13 @@ Responsible for:
 Responsible for:
 
 - Creating runtime games
-- Reconstructing runtime Decks
+- Reconstructing the User's runtime Deck
+- Constructing the default AI Deck
 - Managing active games
 - Coordinating the GameEngine
+- Awarding post-game rewards
 
-The GameService orchestrates the other services but contains no gameplay rules.
+The GameService orchestrates persistence services but contains no gameplay rules.
 
 ---
 
@@ -205,11 +222,12 @@ These include:
 - Condition
 - SearchCriteria
 - Deck
-- Player
+- Hand
 - Field
 - Graveyard
+- Player
 
-Runtime models contain game state but are never stored directly in the database.
+Runtime models contain game state but are never persisted directly.
 
 ---
 
@@ -217,13 +235,17 @@ Runtime models contain game state but are never stored directly in the database.
 
 The GameEngine is responsible for:
 
-- Turn flow
-- Combat
-- Win conditions
+- Creating runtime Players
+- Initializing matches
+- Coordinating turn flow
+- Executing the User's turn
+- Executing the AI's turn
+- Combat resolution
+- Win condition detection
 - Trigger detection
-- Calling the EffectEngine
+- Delegating Effects to the EffectEngine
 
-The GameEngine contains no database logic.
+The GameEngine owns gameplay but never interacts with the database.
 
 ---
 
@@ -231,14 +253,29 @@ The GameEngine contains no database logic.
 
 The EffectEngine is responsible for:
 
-- Resolving Effects
 - Evaluating Conditions
-- Applying gameplay actions
+- Resolving Effect Targets
 - Executing Effect behavior
+- Tracking temporary Effect durations
 
-Effects themselves are data.
+The EffectEngine never determines when Effects trigger.
 
-The EffectEngine interprets and executes them.
+The GameEngine identifies triggered Effects and delegates only those Effects to the EffectEngine.
+
+---
+
+## AI
+
+V1 includes a simple built-in AI opponent.
+
+The AI:
+
+- Uses a fixed runtime Deck.
+- Shuffles its Deck at the beginning of each match.
+- Draws Cards normally.
+- Always plays the first Card in its hand.
+
+The AI exists entirely in runtime and is never persisted to the database.
 
 ---
 
@@ -246,7 +283,9 @@ The EffectEngine interprets and executes them.
 
 Runtime gameplay objects are never persisted directly.
 
-Instead, services reconstruct them from database records whenever they are required.
+Whenever gameplay begins, the GameService reconstructs the User's runtime Deck from the database while constructing the default runtime AI Deck from immutable templates.
+
+Both runtime Decks are then passed to the GameEngine to create the two runtime Player objects used throughout the match.
 
 The reconstruction flow is:
 
@@ -263,7 +302,7 @@ Runtime Objects
 GameEngine
 ```
 
-For example, loading a Deck follows this process:
+Loading a Deck follows this process:
 
 ```
 Deck
@@ -281,7 +320,7 @@ Effect
     └── SearchCriteria
 ```
 
-The resulting runtime hierarchy becomes:
+Resulting runtime hierarchy:
 
 ```
 Deck
@@ -296,7 +335,19 @@ Deck
 └── ...
 ```
 
-The GameEngine operates entirely on these runtime objects without any knowledge of the underlying database.
+The GameEngine operates entirely on runtime objects without any knowledge of SQLAlchemy or database models.
+
+---
+
+## Active Games
+
+Games exist entirely in memory.
+
+Each authenticated User may have one active GameEngine instance managed by the GameService.
+
+Runtime games are never persisted.
+
+Once a game ends, the GameEngine instance is discarded.
 
 ---
 
@@ -304,11 +355,15 @@ The GameEngine operates entirely on these runtime objects without any knowledge 
 
 ## Immutable Templates
 
-Standard playing cards are stored as immutable templates.
+The application uses immutable templates for both standard playing Cards and purchasable Effect definitions.
 
-Players never own template cards.
+Templates are never modified directly.
 
-Instead, users create persistent custom Cards by combining:
+Instead, services construct new runtime objects from template data whenever gameplay objects are required.
+
+Users never own template Cards.
+
+Instead, persistent custom Cards are created by combining:
 
 - One standard Card template
 - Zero or more unlocked Effect templates
@@ -336,7 +391,7 @@ Optional properties include:
 - SearchCriteria
 - Value
 
-Because Effects are data-driven, most new cards can be created without modifying the game engine.
+Because Effects are data-driven, most new cards can be created without modifying the GameEngine.
 
 ---
 
@@ -344,45 +399,57 @@ Because Effects are data-driven, most new cards can be created without modifying
 
 Each layer owns exactly one responsibility.
 
-- Routers expose the API.
-- Services manage persistence.
-- Runtime models store game state.
-- GameEngine controls gameplay.
-- EffectEngine executes Effects.
+- Routers expose the REST API.
+- Services manage persistence and runtime reconstruction.
+- Runtime models represent game state.
+- The GameEngine coordinates gameplay.
+- The EffectEngine executes Effects.
 
-This separation makes the application easier to maintain, test, and extend.
+This separation keeps the application modular, testable, and easy to extend.
 
 ---
 
 # Guiding Principles
 
-- Keep game logic independent of persistence.
+- Keep gameplay independent of persistence.
 - Keep persistence independent of gameplay.
 - Store only persistent data.
 - Reconstruct runtime objects when needed.
 - Prefer composition over inheritance.
 - Keep services focused on a single responsibility.
 - Keep the GameEngine independent of the frontend and database.
-- Design new cards and effects to require minimal engine changes.
+- Design new Cards and Effects to require minimal engine changes.
 
 ---
 
 # Current Status
 
-✅ Runtime domain models complete
+✅ Runtime models complete
+
+✅ SQLAlchemy models complete
+
+✅ Runtime reconstruction complete
+
+✅ Standard Card templates complete
+
+✅ Effect templates complete
+
+✅ AI runtime deck complete
 
 ✅ GameEngine complete
 
 ✅ EffectEngine complete
 
-✅ SQLAlchemy models complete
-
 ✅ Service layer complete
 
 ✅ Authentication complete
 
-⏳ FastAPI routers
+✅ FastAPI routers complete
 
-⏳ REST API
+✅ REST API complete
 
 ⏳ React frontend
+
+⏳ Integration testing
+
+⏳ Production deployment

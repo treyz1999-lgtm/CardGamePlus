@@ -1,12 +1,12 @@
 # Database
 
-## Overview
+# Overview
 
-Card Game Plus uses **SQLite** during development with **SQLAlchemy** as the Object Relational Mapper (ORM).
+Card Game Plus uses **SQLite** during development with **SQLAlchemy** as its Object Relational Mapper (ORM).
 
-The database is responsible only for storing persistent application data.
+The database stores only persistent application data.
 
-Runtime gameplay objects are never stored directly. Instead, the service layer reconstructs runtime objects from database records whenever they are needed.
+Gameplay objects are never stored directly. Instead, the Service Layer reconstructs runtime objects from database records whenever gameplay begins.
 
 ---
 
@@ -14,17 +14,17 @@ Runtime gameplay objects are never stored directly. Instead, the service layer r
 
 The database follows a normalized relational design.
 
-Each table stores a single type of persistent entity while relationships between entities are represented using foreign keys.
+Each table stores one type of persistent entity while relationships are represented using foreign keys.
 
-This keeps the schema:
+This design keeps the schema:
 
 - Easy to query
 - Easy to maintain
 - Easy to extend
 
-The database is **not** responsible for gameplay.
+The database is intentionally independent of gameplay.
 
-Instead, the application follows this architecture:
+Runtime reconstruction follows this flow:
 
 ```
 Database
@@ -42,19 +42,19 @@ GameEngine
 EffectEngine
 ```
 
-The services reconstruct runtime objects before they are passed into the game engines.
+The GameEngine never interacts directly with SQLAlchemy models.
 
 ---
 
 # Database Schema
 
-The current database consists of the following tables.
+The V1 database consists of the following tables.
 
 ---
 
 ## User
 
-Stores player accounts and persistent player information.
+Stores player accounts and persistent player progression.
 
 ### Attributes
 
@@ -75,7 +75,7 @@ Stores player accounts and persistent player information.
 
 Stores every persistent custom Card owned by a User.
 
-Cards are created from immutable Card templates plus zero or more purchased Effect templates.
+Cards are created from one immutable Card template and zero or more unlocked Effect templates.
 
 ### Attributes
 
@@ -94,7 +94,7 @@ Cards are created from immutable Card templates plus zero or more purchased Effe
 
 ## Effect
 
-Stores every Effect attached to a Card.
+Stores every Effect attached to a persistent Card.
 
 ### Attributes
 
@@ -136,6 +136,8 @@ Stores optional activation requirements for an Effect.
 
 Stores optional search filters used by search-related Effects.
 
+Although V1 does not currently include search Effects, the schema is included to support future expansion without requiring database changes.
+
 ### Attributes
 
 - search_id (Primary Key)
@@ -163,13 +165,13 @@ Stores user-created Decks.
 ### Relationships
 
 - Belongs to one User
-- Contains Cards through the DeckCard table
+- Contains many Cards through DeckCard
 
 ---
 
 ## DeckCard
 
-Join table representing the many-to-many relationship between Decks and Cards.
+Join table implementing the many-to-many relationship between Decks and Cards.
 
 ### Attributes
 
@@ -201,17 +203,17 @@ The template definitions themselves are stored in `effect_templates.py`.
 
 - Belongs to one User
 
-A user may unlock many Effect templates, but each template may only be owned once.
+A User may unlock many Effect templates, but each template may only be owned once.
 
 ---
 
 # Runtime Reconstruction
 
-The database never stores runtime objects directly.
+The database never stores runtime gameplay objects.
 
-Instead, services reconstruct the object hierarchy whenever gameplay begins.
+Whenever gameplay begins, the Service Layer reconstructs the complete runtime object hierarchy from persistent records.
 
-For example, loading a Deck follows this process:
+Deck reconstruction follows this process:
 
 ```
 Load Deck
@@ -225,11 +227,9 @@ Query Card records
     ▼
 Query Effect records
     │
-    ▼
-Query Condition records
+    ├── Query Condition records
     │
-    ▼
-Query SearchCriteria records
+    └── Query SearchCriteria records
     │
     ▼
 Construct runtime objects
@@ -250,22 +250,64 @@ Deck
 └── ...
 ```
 
-The GameEngine operates entirely on runtime objects and has no knowledge of the database.
+The reconstructed Deck is then passed into the GameEngine to create the runtime Player.
+
+During gameplay, the GameEngine interacts only with runtime objects and has no knowledge of SQLAlchemy or the underlying database.
+
+---
+
+# Runtime vs Persistence
+
+Persistent data and gameplay state are intentionally separated.
+
+Persistent data includes:
+
+- Users
+- Custom Cards
+- Effects
+- Conditions
+- SearchCriteria
+- Decks
+- Purchased Effect templates
+
+Runtime objects include:
+
+- Player
+- Deck
+- Hand
+- Field
+- Graveyard
+- Card
+- Effect
+- Condition
+- SearchCriteria
+
+Runtime objects exist only while a game is active.
+
+---
+
+# AI
+
+The V1 AI opponent is never stored in the database.
+
+Instead, the GameService constructs a default runtime AI Deck directly from immutable templates whenever a game begins.
+
+This keeps the database focused entirely on player-owned content.
 
 ---
 
 # Service Responsibilities
 
-Each database table has a corresponding service responsible for persisting and reconstructing its runtime model.
+Each database table has a corresponding service responsible for persistence and runtime reconstruction.
 
-| Service | Primary Responsibility |
-|----------|------------------------|
-| AuthService | Authentication and JWT |
+| Service | Responsibility |
+|----------|----------------|
+| AuthService | Authentication and JWT management |
 | UserService | User persistence |
-| ShopService | Gold and unlocked Effect templates |
-| CardService | Card persistence and reconstruction |
-| EffectService | Effect persistence and reconstruction |
-| DeckService | Deck persistence and reconstruction |
+| ShopService | Gold management and unlocked Effect templates |
+| EffectService | Effect persistence and runtime reconstruction |
+| CardService | Card persistence and runtime reconstruction |
+| DeckService | Deck persistence and runtime reconstruction |
 | GameService | Runtime game orchestration |
 
 This separation keeps persistence independent from gameplay.
@@ -276,9 +318,9 @@ This separation keeps persistence independent from gameplay.
 
 ## Immutable Card Templates
 
-Standard playing cards are never stored in the database.
+Standard playing Cards are never stored in the database.
 
-Instead, custom Cards reference immutable templates defined in `standard_deck.py`.
+Instead, custom Cards are created from immutable templates defined in `standard_deck.py`.
 
 This eliminates duplicated card data while allowing unlimited customization.
 
@@ -288,17 +330,27 @@ This eliminates duplicated card data while allowing unlimited customization.
 
 Purchasable Effects are defined once inside `effect_templates.py`.
 
-The Shop stores only the template key that identifies which templates a User has unlocked.
+The Shop stores only the template key identifying which Effect templates a User has permanently unlocked.
 
-Custom Cards may freely reuse any unlocked template without purchasing it again.
+Custom Cards may reuse any unlocked template without purchasing it again.
 
 ---
 
-## Runtime Objects
+## Runtime Reconstruction
 
-Runtime models are reconstructed by the service layer whenever a game begins.
+Runtime gameplay objects are reconstructed by the Service Layer whenever gameplay begins.
 
-This allows the GameEngine to operate entirely on Python objects without any dependency on SQLAlchemy or the database.
+This allows the GameEngine to operate entirely on Python objects without any dependency on SQLAlchemy.
+
+---
+
+## Active Games
+
+Games are never persisted.
+
+Each authenticated User may have one active GameEngine instance stored in memory by the GameService.
+
+Once a game ends, the runtime GameEngine is discarded.
 
 ---
 
@@ -310,12 +362,16 @@ This allows the GameEngine to operate entirely on Python objects without any dep
 
 ✅ Relational schema complete
 
+✅ Runtime reconstruction complete
+
 ✅ Authentication complete
 
 ✅ Service layer complete
 
-⏳ FastAPI routers
-
-⏳ REST API
+✅ REST API complete
 
 ⏳ React frontend
+
+⏳ Integration testing
+
+⏳ Production deployment
